@@ -10,16 +10,161 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(class)
 library(ggplot2)
+library(GGally)
+library(janitor)
 ```
 
 ```{r}
-H1B_Test <- read_csv(file = "H1B_Test.csv")
-H1B_Train <- read_csv(file = "H1B_Train.csv")
+H1B_Test <- read_csv(file = "../Data/H1B_Test.csv")
+H1B_Train <- read_csv(file = "../Data/H1B_Train.csv")
 
-Xtrain <-   # Our training set X
-Ytrain = Weekly$Direction[Z]  # Our training set y
-Xtest = Weekly[-Z,2:7] 
-Yhat <- knn(Xtrain, Xtest, Ytrain, k = 10) 
-Ytest <- Weekly$Direction[-Z]
+H1B_Train <- H1B_Train %>% 
+  mutate(CASE_STATUS = as.factor(CASE_STATUS),
+         CASE_STATUS = as.numeric(CASE_STATUS),
+         REFILE = as.factor(REFILE),
+         REFILE = as.numeric(REFILE),
+         FW_OWNERSHIP_INTEREST = as.factor(FW_OWNERSHIP_INTEREST),
+         FW_OWNERSHIP_INTEREST = as.numeric(FW_OWNERSHIP_INTEREST),
+         PW_SKILL_LEVEL = as.factor(PW_SKILL_LEVEL),
+         PW_SKILL_LEVEL = as.numeric(PW_SKILL_LEVEL),
+         WAGE_OFFER_UNIT_OF_PAY = as.factor(WAGE_OFFER_UNIT_OF_PAY),
+         WAGE_OFFER_UNIT_OF_PAY = as.numeric(WAGE_OFFER_UNIT_OF_PAY),
+         MINIMUM_EDUCATION = as.factor(MINIMUM_EDUCATION),
+         MINIMUM_EDUCATION = as.numeric(MINIMUM_EDUCATION),
+         REQUIRED_TRAINING = as.factor(REQUIRED_TRAINING),
+         REQUIRED_TRAINING = as.numeric(REQUIRED_TRAINING),
+         REQUIRED_EXPERIENCE = as.factor(REQUIRED_EXPERIENCE),
+         REQUIRED_EXPERIENCE = as.numeric(REQUIRED_EXPERIENCE),
+         ACCEPT_ALT_OCCUPATION = as.factor(ACCEPT_ALT_OCCUPATION),
+         ACCEPT_ALT_OCCUPATION = as.numeric(ACCEPT_ALT_OCCUPATION),
+         FOREIGN_LANGUAGE_REQUIRED = as.factor(FOREIGN_LANGUAGE_REQUIRED),
+         FOREIGN_LANGUAGE_REQUIRED = as.numeric(FOREIGN_LANGUAGE_REQUIRED),
+         FOREIGN_WORKER_LIVE_ON_PREM = as.factor(FOREIGN_WORKER_LIVE_ON_PREM),
+         FOREIGN_WORKER_LIVE_ON_PREM = as.numeric(FOREIGN_WORKER_LIVE_ON_PREM),
+         FOREIGN_WORKER_LIVE_IN_DOM_SER = as.factor(FOREIGN_WORKER_LIVE_IN_DOM_SER),
+         FOREIGN_WORKER_LIVE_IN_DOM_SER = as.numeric(FOREIGN_WORKER_LIVE_IN_DOM_SER),
+         PROFESSIONAL_OCCUPATION = as.factor(PROFESSIONAL_OCCUPATION),
+         PROFESSIONAL_OCCUPATION = as.numeric(PROFESSIONAL_OCCUPATION),
+         APP_FOR_COLLEGE_U_TEACHER = as.factor(APP_FOR_COLLEGE_U_TEACHER),
+         APP_FOR_COLLEGE_U_TEACHER = as.numeric(APP_FOR_COLLEGE_U_TEACHER),
+         COUNTRY_OF_CITIZENSHIP = as.factor(COUNTRY_OF_CITIZENSHIP),
+         COUNTRY_OF_CITIZENSHIP = as.numeric(COUNTRY_OF_CITIZENSHIP),
+         CLASS_OF_ADMISSION = as.factor(CLASS_OF_ADMISSION),
+         CLASS_OF_ADMISSION = as.numeric(CLASS_OF_ADMISSION),
+         FOREIGN_WORKER_EDUCATION = as.factor(FOREIGN_WORKER_EDUCATION),
+         FOREIGN_WORKER_EDUCATION = as.numeric(FOREIGN_WORKER_EDUCATION),
+         FOREIGN_WORKER_ED_INST_US = as.factor(FOREIGN_WORKER_ED_INST_US),
+         FOREIGN_WORKER_ED_INST_US = as.numeric(FOREIGN_WORKER_ED_INST_US),
+         FOREIGN_WORKER_REQ_EXPERIENCE = as.factor(FOREIGN_WORKER_REQ_EXPERIENCE),
+         FOREIGN_WORKER_REQ_EXPERIENCE = as.numeric(FOREIGN_WORKER_REQ_EXPERIENCE),
+         FOREIGN_WORKER_EXP_WITH_EMPL = as.factor(FOREIGN_WORKER_EXP_WITH_EMPL),
+         FOREIGN_WORKER_EXP_WITH_EMPL = as.numeric(FOREIGN_WORKER_EXP_WITH_EMPL),
+         FOREIGN_WORKER_EMPL_PAY_FOR_ED = as.factor(FOREIGN_WORKER_EMPL_PAY_FOR_ED),
+         FOREIGN_WORKER_EMPL_PAY_FOR_ED = as.numeric(FOREIGN_WORKER_EMPL_PAY_FOR_ED),
+         FOREIGN_WORKER_CURR_EMPLOYED = as.factor(FOREIGN_WORKER_CURR_EMPLOYED),
+         FOREIGN_WORKER_CURR_EMPLOYED = as.numeric(FOREIGN_WORKER_CURR_EMPLOYED),
+         EMPLOYER_COMPLETED_APPLICATION = as.factor(EMPLOYER_COMPLETED_APPLICATION),
+         EMPLOYER_COMPLETED_APPLICATION = as.numeric(EMPLOYER_COMPLETED_APPLICATION))
+
+H1B_Test <- H1B_Test %>% 
+  mutate(CASE_STATUS = as.factor(CASE_STATUS),
+         CASE_STATUS = as.numeric(CASE_STATUS),
+         REFILE = as.factor(REFILE),
+         REFILE = as.numeric(REFILE),
+         FW_OWNERSHIP_INTEREST = as.factor(FW_OWNERSHIP_INTEREST),
+         FW_OWNERSHIP_INTEREST = as.numeric(FW_OWNERSHIP_INTEREST),
+         PW_SKILL_LEVEL = as.factor(PW_SKILL_LEVEL),
+         PW_SKILL_LEVEL = as.numeric(PW_SKILL_LEVEL),
+         WAGE_OFFER_UNIT_OF_PAY = as.factor(WAGE_OFFER_UNIT_OF_PAY),
+         WAGE_OFFER_UNIT_OF_PAY = as.numeric(WAGE_OFFER_UNIT_OF_PAY),
+         MINIMUM_EDUCATION = as.factor(MINIMUM_EDUCATION),
+         MINIMUM_EDUCATION = as.numeric(MINIMUM_EDUCATION),
+         REQUIRED_TRAINING = as.factor(REQUIRED_TRAINING),
+         REQUIRED_TRAINING = as.numeric(REQUIRED_TRAINING),
+         REQUIRED_EXPERIENCE = as.factor(REQUIRED_EXPERIENCE),
+         REQUIRED_EXPERIENCE = as.numeric(REQUIRED_EXPERIENCE),
+         ACCEPT_ALT_OCCUPATION = as.factor(ACCEPT_ALT_OCCUPATION),
+         ACCEPT_ALT_OCCUPATION = as.numeric(ACCEPT_ALT_OCCUPATION),
+         FOREIGN_LANGUAGE_REQUIRED = as.factor(FOREIGN_LANGUAGE_REQUIRED),
+         FOREIGN_LANGUAGE_REQUIRED = as.numeric(FOREIGN_LANGUAGE_REQUIRED),
+         FOREIGN_WORKER_LIVE_ON_PREM = as.factor(FOREIGN_WORKER_LIVE_ON_PREM),
+         FOREIGN_WORKER_LIVE_ON_PREM = as.numeric(FOREIGN_WORKER_LIVE_ON_PREM),
+         FOREIGN_WORKER_LIVE_IN_DOM_SER = as.factor(FOREIGN_WORKER_LIVE_IN_DOM_SER),
+         FOREIGN_WORKER_LIVE_IN_DOM_SER = as.numeric(FOREIGN_WORKER_LIVE_IN_DOM_SER),
+         PROFESSIONAL_OCCUPATION = as.factor(PROFESSIONAL_OCCUPATION),
+         PROFESSIONAL_OCCUPATION = as.numeric(PROFESSIONAL_OCCUPATION),
+         APP_FOR_COLLEGE_U_TEACHER = as.factor(APP_FOR_COLLEGE_U_TEACHER),
+         APP_FOR_COLLEGE_U_TEACHER = as.numeric(APP_FOR_COLLEGE_U_TEACHER),
+         COUNTRY_OF_CITIZENSHIP = as.factor(COUNTRY_OF_CITIZENSHIP),
+         COUNTRY_OF_CITIZENSHIP = as.numeric(COUNTRY_OF_CITIZENSHIP),
+         CLASS_OF_ADMISSION = as.factor(CLASS_OF_ADMISSION),
+         CLASS_OF_ADMISSION = as.numeric(CLASS_OF_ADMISSION),
+         FOREIGN_WORKER_EDUCATION = as.factor(FOREIGN_WORKER_EDUCATION),
+         FOREIGN_WORKER_EDUCATION = as.numeric(FOREIGN_WORKER_EDUCATION),
+         FOREIGN_WORKER_ED_INST_US = as.factor(FOREIGN_WORKER_ED_INST_US),
+         FOREIGN_WORKER_ED_INST_US = as.numeric(FOREIGN_WORKER_ED_INST_US),
+         FOREIGN_WORKER_REQ_EXPERIENCE = as.factor(FOREIGN_WORKER_REQ_EXPERIENCE),
+         FOREIGN_WORKER_REQ_EXPERIENCE = as.numeric(FOREIGN_WORKER_REQ_EXPERIENCE),
+         FOREIGN_WORKER_EXP_WITH_EMPL = as.factor(FOREIGN_WORKER_EXP_WITH_EMPL),
+         FOREIGN_WORKER_EXP_WITH_EMPL = as.numeric(FOREIGN_WORKER_EXP_WITH_EMPL),
+         FOREIGN_WORKER_EMPL_PAY_FOR_ED = as.factor(FOREIGN_WORKER_EMPL_PAY_FOR_ED),
+         FOREIGN_WORKER_EMPL_PAY_FOR_ED = as.numeric(FOREIGN_WORKER_EMPL_PAY_FOR_ED),
+         FOREIGN_WORKER_CURR_EMPLOYED = as.factor(FOREIGN_WORKER_CURR_EMPLOYED),
+         FOREIGN_WORKER_CURR_EMPLOYED = as.numeric(FOREIGN_WORKER_CURR_EMPLOYED),
+         EMPLOYER_COMPLETED_APPLICATION = as.factor(EMPLOYER_COMPLETED_APPLICATION),
+         EMPLOYER_COMPLETED_APPLICATION = as.numeric(EMPLOYER_COMPLETED_APPLICATION))
+
+
+```
+
+
+
+
+```{r}
+Xtrain <- H1B_Train  %>% 
+  dplyr::select(-c(...1, CASE_STATUS))# Our training set X
+
+Ytrain  <-  H1B_Train$CASE_STATUS
+
+Xtest = H1B_Test  %>% 
+  dplyr::select(-c(...1, CASE_STATUS))
+
+Yhat <- knn(Xtrain, Xtest, Ytrain, k = 10, prob = T) 
+
+Ytest <- H1B_Test$CASE_STATUS
+```
+
+```{r}
+conf_matrix <- table(Ytest, Yhat)
+conf_matrix
+```
+
+```{r}
+training_pct <- .70
+class_rate = (table(Ytest, Yhat)[1, 1] + table(Ytest, Yhat)[2, 2])/(training_pct*(nrow(H1B_Test)+nrow(H1B_Train)))
+class_rate
+```
+
+```{r}
+# Initialize data
+err_class <- rep(1:100)
+tpr <- rep(1:100)
+fpr <- rep(1:100)
+
+# run the loop
+for (k in 1:100){
+  Yhat <- knn(Xtrain, Xtest, Ytrain, k = k) 
+  err_class[k] <- mean(Yhat != Ytest) # The prediction is not correct
+  tpr[k] <- sum(Yhat == 1 & Ytest == 1) / sum(Ytest == 1) # TP/P
+  fpr[k] <- sum(Yhat == 1 & Ytest == 0) / sum(Ytest == 0) # FP/N
+}
+
+ggplot(tibble(err_class, k = 1:100), aes(x = k, y = err_class)) +
+  geom_line()
+```
+
+```{r}
+which.min(err_class) # gives the k
+err_class[which.min(err_class)] # Probability of a Mis-classification 
 ```
 

@@ -1,0 +1,86 @@
+---
+title:  <center> <span style="color:skyblue">STAT627 - Project Plan</span> </center>
+author: |
+  <center> Yuka Chen - STAT627 </center>
+  <center> Jeremy Joy - STAT627 </center>
+  <center>Concillia Mpofu - STAT627</center> 
+  <center>Connor Cabrey - STAT627</center>
+date:  <center> `r Sys.Date()` </center>
+output:
+  html_document: default
+  pdf_document: default
+editor_options:
+  markdown:
+    wrap: 72
+---
+## <span style="color: skyblue;">Project Title:</span>
+
+### **Remaining Useful Life Prediction Using Machine Learning Methods**
+
+## <span style="color: skyblue;">Group Members:</span>
+
+##### <span style="color: skyblue;">GitHub:</span> <https://github.com/ccabes15/RUL_Project_ML>
+
+-   `Yuka Chen` @yjchen9596
+
+-   `Jeremy Joy` @Thrice-J
+
+-   `Concillia Mpofu` @ConcilliaHlezi
+
+-   `Connor Cabrey` @ccabes15
+
+*We will communicate regular through text and Github. We will have our
+own branch to work on our own assigned responsibilities, and merge to
+main branch when we meet on Zoom bi-weekly*
+
+## <span style="color: skyblue;">Topic:</span>
+Using the NASA PHM08 Challenge Dataset, our group will attempt to
+predict the remaining useful life of engines with multiple Machine
+Learning methods and approaches.
+
+## <span style="color: skyblue;"> Questions of Interest:</span>
+
+<span style="color: skyblue;"> At least two involving different variables used for regression or classification.</span>
+
+1)  What variables of the 26 most contribute to the Remaining Useful
+    Life of the engines?
+2)  Which machine learning method most accurately predicts RUL?
+3)  What variables can be removed to speed up prediction of RUL?
+
+## <span style="color: skyblue;"> Approaches:</span>
+
+-   Multiple Regression
+-   Ridge Regression
+-   Clustering
+-   Jackknife for cross-validation
+-   Principal Component Analysis
+
+## <span style="color: skyblue;"> Group Responsibilities:</span>
+
+#### `Connor`
+
+-   Identify Data Source
+-   Data upload and cleaning
+-   Initial EDA
+-   Clustering
+-   Poster Layout
+
+#### `Connie`
+
+-   Multiple Regression
+-   EXSUM
+
+#### `Jeremy`
+
+-   Ridge Regression
+-   PCA
+-   Ethical Assessment/Stakeholders
+
+#### `Yuka`
+
+-   Jackknife/PCA
+-   Project Compilation
+
+## <span style="color: skyblue;">Deliverable:</span>
+Our group will do Option A: Presentation or Poster. We will be creating
+a presentation.

@@ -16,7 +16,7 @@ library(tidyverse)
 library(lubridate)
 library(tidymodels)
 
-H1B <- read_csv("https://media.githubusercontent.com/media/ccabes15/RUL_Project_ML/main/H1B_PERM_DISCLOSURE_DATA/H1B_Initial_Tidy.csv")
+H1B <- read_csv("https://media.githubusercontent.com/media/ccabes15/H1B_Project_ML/main/Data/H1B_Initial_Tidy.csv")
 
 H1B <- H1B %>% 
   mutate(Waiting_Period = DECISION_DATE- RECEIVED_DATE) |> 

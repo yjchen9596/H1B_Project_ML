@@ -15,6 +15,7 @@ output: html_document
 library(tidyverse)
 library(lubridate)
 library(tidymodels)
+library(fastDummies)
 
 H1B <- read_csv("https://media.githubusercontent.com/media/ccabes15/H1B_Project_ML/main/Data/H1B_Initial_Tidy.csv")
 
@@ -38,6 +39,18 @@ H1B <- H1B %>%
 
 H1B <- H1B %>% 
   drop_na() %>% 
+  rename(WAITING_PERIOD = Waiting_Period) %>%
+  mutate(WAITING_PERIOD = as.numeric(WAITING_PERIOD))
+  
+
+H1B_dummies <- dummy_cols(.data = H1B, select_columns = c("PW_SKILL_LEVEL", "WAGE_OFFER_UNIT_OF_PAY", "MINIMUM_EDUCATION", "COUNTRY_OF_CITIZENSHIP", "CLASS_OF_ADMISSION", "FOREIGN_WORKER_EDUCATION", "FOREIGN_WORKER_ED_INST_US", "FOREIGN_WORKER_REQ_EXPERIENCE", "FOREIGN_WORKER_EXP_WITH_EMPL"))
+
+H1B_dummies <- H1B_dummies %>%
+  select(-c("PW_SKILL_LEVEL", "WAGE_OFFER_UNIT_OF_PAY", "MINIMUM_EDUCATION", "COUNTRY_OF_CITIZENSHIP", "CLASS_OF_ADMISSION", "FOREIGN_WORKER_EDUCATION", "FOREIGN_WORKER_ED_INST_US", "FOREIGN_WORKER_REQ_EXPERIENCE", "FOREIGN_WORKER_EXP_WITH_EMPL"))
+
+#For Connor's KNN
+H1B <- H1B %>% 
+  mutate(WAITING_PERIOD = as.numeric(WAITING_PERIOD))
   mutate(CASE_STATUS = as.factor(CASE_STATUS),
          CASE_STATUS = as.numeric(CASE_STATUS),
          REFILE = as.factor(REFILE),
@@ -86,8 +99,6 @@ H1B <- H1B %>%
          EMPLOYER_COMPLETED_APPLICATION = as.numeric(EMPLOYER_COMPLETED_APPLICATION)) %>% 
      rename(WAITING_PERIOD = Waiting_Period)
 
-H1B <- H1B %>% 
-  mutate(WAITING_PERIOD = as.numeric(WAITING_PERIOD))
 
 glimpse(H1B)
 
@@ -106,5 +117,15 @@ write.csv(H1B_Train, file = "../Data/H1B_Train.csv")
 write.csv(H1B_Test, file = "../Data/H1B_Test.csv")
 ```
 
+```{r}
+data_split <- initial_split(H1B_dummies, prop = 0.7)
 
+set.seed(1234)
+
+H1B_Train_dummies <- training(data_split)
+H1B_Test_dummies <- testing(data_split)
+
+write.csv(H1B_Train_dummies, file = "../Data/H1B_Train_Dummies.csv")
+write.csv(H1B_Test_dummies, file = "../Data/H1B_Test_Dummies.csv")
+```
 

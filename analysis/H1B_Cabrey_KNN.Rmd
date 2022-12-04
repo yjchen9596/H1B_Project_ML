@@ -12,8 +12,10 @@ library(class)
 library(ggplot2)
 library(GGally)
 library(janitor)
+library(caret)
 ```
 
+Importing in training/testing data and mutating variables to as.numeric.  Factors introduce NA coercion with KNN.
 ```{r}
 H1B_Test <- read_csv(file = "../Data/H1B_Test.csv")
 H1B_Train <- read_csv(file = "../Data/H1B_Train.csv")
@@ -119,7 +121,7 @@ H1B_Test <- H1B_Test %>%
 
 
 
-
+Creating my Xtrain, Ytrain, Xtext, Ytest dataframes/vectors for creating of my knn model
 ```{r}
 Xtrain <- H1B_Train  %>% 
   dplyr::select(-c(...1, CASE_STATUS))# Our training set X
@@ -147,19 +149,19 @@ class_rate
 
 ```{r}
 # Initialize data
-err_class <- rep(1:100)
-tpr <- rep(1:100)
-fpr <- rep(1:100)
+err_class <- rep(1:10)
+tpr <- rep(1:10)
+fpr <- rep(1:10)
 
 # run the loop
-for (k in 1:100){
+for (k in 1:10){
   Yhat <- knn(Xtrain, Xtest, Ytrain, k = k) 
   err_class[k] <- mean(Yhat != Ytest) # The prediction is not correct
-  tpr[k] <- sum(Yhat == 1 & Ytest == 1) / sum(Ytest == 1) # TP/P
-  fpr[k] <- sum(Yhat == 1 & Ytest == 0) / sum(Ytest == 0) # FP/N
+  tpr[k] <- sum(Yhat == 2 & Ytest == 2) / sum(Ytest == 2) # TP/P
+  fpr[k] <- sum(Yhat == 2 & Ytest == 1) / sum(Ytest == 1) # FP/N
 }
 
-ggplot(tibble(err_class, k = 1:100), aes(x = k, y = err_class)) +
+ggplot(tibble(err_class, k = 1:10), aes(x = k, y = err_class)) +
   geom_line()
 ```
 
@@ -167,4 +169,40 @@ ggplot(tibble(err_class, k = 1:100), aes(x = k, y = err_class)) +
 which.min(err_class) # gives the k
 err_class[which.min(err_class)] # Probability of a Mis-classification 
 ```
+```{r}
+Yhat_7 <- knn(Xtrain, Xtest, Ytrain, k = 7, prob = T) 
+
+```
+
+```{r}
+conf_matrix <- table(Ytest, Yhat_7)
+conf_matrix
+```
+
+```{r}
+training_pct <- .70
+class_rate = (table(Ytest, Yhat_7)[1, 1] + table(Ytest, Yhat_7)[2,2])/((1-training_pct)*((nrow(H1B_Test)+(nrow(H1B_Train)))))
+class_rate
+```
+
+
+```{r}
+caret_train <- H1B_Train  %>% 
+  dplyr::select(-c(...1)) %>% 
+  mutate(CASE_STATUS = as.factor(CASE_STATUS))# Our training set X
+
+caret_test <- H1B_Test  %>% 
+  dplyr::select(-c(...1)) %>% 
+  mutate(CASE_STATUS = as.factor(CASE_STATUS))
+  # Our training set X
+
+set.seed(1234)
+
+ctrl <- trainControl(method="repeatedcv",repeats = 3) #,classProbs=TRUE,summaryFunction = twoClassSummary)
+knnFit <- train(CASE_STATUS ~ ., data = caret_train, method = "knn", trControl = ctrl, preProcess = c("center","scale"), tuneLength = 20)
+```
+
+
+
+
 

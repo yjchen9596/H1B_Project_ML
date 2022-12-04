@@ -1,0 +1,68 @@
+---
+title: "H1B - Ridge/Lasso"
+author: "Jeremy Joy"
+date: "2022-12-04"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+library(tidyverse)
+library(broom)
+library(janitor)
+library(glmnet)
+library(leaps)
+```
+
+### Loading Training and Testing Data
+
+```{r message=FALSE, warning=FALSE}
+H1B_Train <- read_csv("../Data/H1B_Train.csv")
+H1B_Test <- read_csv("../Data/H1B_Test.csv")
+```
+
+### Analyzing Data
+
+```{r}
+H1B_Train <- H1B_Train %>% 
+  mutate(CASE_STATUS = as.factor(CASE_STATUS),
+         REFILE = as.factor(REFILE),
+         FW_OWNERSHIP_INTEREST = as.factor(FW_OWNERSHIP_INTEREST),
+         PW_SKILL_LEVEL = as.factor(PW_SKILL_LEVEL),
+         WAGE_OFFER_UNIT_OF_PAY = as.factor(WAGE_OFFER_UNIT_OF_PAY),
+         MINIMUM_EDUCATION = as.factor(MINIMUM_EDUCATION),
+         REQUIRED_TRAINING = as.factor(REQUIRED_TRAINING),
+         REQUIRED_EXPERIENCE = as.factor(REQUIRED_EXPERIENCE),
+         ACCEPT_ALT_OCCUPATION = as.factor(ACCEPT_ALT_OCCUPATION),
+         FOREIGN_LANGUAGE_REQUIRED = as.factor(FOREIGN_LANGUAGE_REQUIRED),
+         FOREIGN_WORKER_LIVE_ON_PREM = as.factor(FOREIGN_WORKER_LIVE_ON_PREM),
+         FOREIGN_WORKER_LIVE_IN_DOM_SER = as.factor(FOREIGN_WORKER_LIVE_IN_DOM_SER),
+         PROFESSIONAL_OCCUPATION = as.factor(PROFESSIONAL_OCCUPATION),
+         APP_FOR_COLLEGE_U_TEACHER = as.factor(APP_FOR_COLLEGE_U_TEACHER),
+         COUNTRY_OF_CITIZENSHIP = as.factor(COUNTRY_OF_CITIZENSHIP),
+         CLASS_OF_ADMISSION = as.factor(CLASS_OF_ADMISSION),
+         FOREIGN_WORKER_EDUCATION = as.factor(FOREIGN_WORKER_EDUCATION),
+         FOREIGN_WORKER_ED_INST_US = as.factor(FOREIGN_WORKER_ED_INST_US),
+         FOREIGN_WORKER_REQ_EXPERIENCE = as.factor(FOREIGN_WORKER_REQ_EXPERIENCE),
+         FOREIGN_WORKER_EXP_WITH_EMPL = as.factor(FOREIGN_WORKER_EXP_WITH_EMPL),
+         FOREIGN_WORKER_EMPL_PAY_FOR_ED = as.factor(FOREIGN_WORKER_EMPL_PAY_FOR_ED),
+         FOREIGN_WORKER_CURR_EMPLOYED = as.factor(FOREIGN_WORKER_CURR_EMPLOYED),
+         EMPLOYER_COMPLETED_APPLICATION = as.factor(EMPLOYER_COMPLETED_APPLICATION)) %>%
+  select(2:27)
+
+
+glimpse(H1B_Train)
+```
+
+```{r}
+#Getting Training Design Matrix and Response Vector
+reg_train <- lm(CASE_STATUS ~ ., data = H1B_Train) 
+x_train <- model.matrix(reg_train)[,-1]
+y_train <- college_train$Apps
+
+summary(reg_train)
+```
+

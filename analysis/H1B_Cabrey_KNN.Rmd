@@ -1,0 +1,25 @@
+---
+title: "KNN"
+author: "Connor Cabrey"
+date: "2022-12-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(class)
+library(ggplot2)
+```
+
+```{r}
+H1B_Test <- read_csv(file = "H1B_Test.csv")
+H1B_Train <- read_csv(file = "H1B_Train.csv")
+
+Xtrain <-   # Our training set X
+Ytrain = Weekly$Direction[Z]  # Our training set y
+Xtest = Weekly[-Z,2:7] 
+Yhat <- knn(Xtrain, Xtest, Ytrain, k = 10) 
+Ytest <- Weekly$Direction[-Z]
+```
+

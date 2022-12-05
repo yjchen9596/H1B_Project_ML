@@ -1,12 +1,22 @@
 ---
-title: "pca/pls"
+title: "PCA and PLS"
 author: "Yuka Chen"
 date: "`r Sys.Date()`"
-output: html_document
+output: rmdformats::material
+
 ---
+```{r include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	tidy = TRUE,
+	error = TRUE,
+	tidy.opts = list(width.cutoff = 60)
+)
+```
 
 # Load Library
-```{r message=FALSE}
+```{r message=FALSE, warning=FALSE}
 library(tidyverse)
 library(tidymodels)
 library(GGally)
@@ -23,14 +33,28 @@ library(knitr)
 
 ```
 
-# Load Datasets - H1B_Train_Dummies/H1B_Test_Dummie
+# Load Datasets
+
+
+
 ```{r message=FALSE, warning=FALSE}
 H1B_Train <- read_csv("../Data/H1B_Train_Dummies.csv",col_select = c(2:267))
 H1B_Test <- read_csv("../Data/H1B_Test_Dummies.csv",col_select = c(2:267))
 
+dim(H1B_Train)
+dim(H1B_Test)
+
 ```
 
-# Correlation:
+Since we transfer the data to dummy variables, there are many columns and it is hard to read the summary, so I set some code chuck "run the code but show nothing"
+
+We set the initial seeds and percentage at the data cleaning process, if you want to check you could go to Data/Code to find how we did.
+- For H1B training data set, we get 266 variables and 64719 rows. 
+- For H1B training data set, we get 266 variables and 27738 rows. 
+
+
+
+## Correlation:
 ```{r}
 
 library(DT)
@@ -39,89 +63,103 @@ H1B_COR = round(cor(H1B_Train),
 datatable(H1B_COR)
 ```
 
-Count NA in each row just to make sure there's no NA in the datasets anymore
-```{r}
+## Count NA
+
+Count NA in each row just to make sure there's no NA in the datasets anymore.
+
+```{r include=FALSE}
 map_dbl(H1B_Train, ~ sum(is.na(.)))
 # no NA
 ```
 
+There is no NA in this data set as we cleaned it in the data cleaning process
+
+## Correlation Table
 ```{r}
-cor(H1B_Train, use = "complete.obs")
+cor(H1B_Train, use = "complete.obs") |> 
+  datatable()
 ```
+## Correlation Table - as Absolute Value
 
 ```{r}
 abs_cor = (abs(cor(H1B_Train, use = "complete.obs"))-.1) |> 
-  round(0) |> 
-  kbl() |> 
-  kable_styling()
-
+  round(0)
+datatable(abs_cor)
 ```
+# GLM
+
+## Run a simple model for Priciple Conponent
 
 ```{r}
 reg <-  glm(CASE_STATUS ~ ., data = H1B_Train)
 X <-  model.matrix(reg)
 ```
 
-```{r warning=FALSE, include=FALSE}
+```{r echo=T, results='hide'}
 pc <- stats::prcomp(X)
 pc
 ```
 
-```{r include=FALSE}
+```{r echo=T, results='hide'}
 100*(pc$sdev/sum(pc$sdev)) |> round(3)
 ```
 
-```{r}
+```{r echo=T, results='hide'}
+## the output is too long so the r chuck 
+## set it as not showing output
 summary(pc)
-kable(summary(iq_fit2)$coefficients, digits=3)
 ```
 
+## PC Plot
 ```{r}
 screeplot(pc)
 ```
 
-```{r}
+```{r echo=T, results='hide'}
 pc$rotation[,1] |> round(3)
 ```
 
-```{r}
-pc_s <- prcomp(X[,-1], scale = TRUE)
+```{r echo=T, results='hide'}
+pc_s <- prcomp(X[,-1])
 pc_s
-```
-
-```{r}
 summary(pc_s)
 ```
 
-```{r}
+
+```{r echo=T, results='hide'}
 screeplot(pc_s)
 ```
 
-```{r}
-summary(lm(CASE_STATUS ~ ., data = H1B_Train))
+```{r message=FALSE, warning=FALSE}
+summary(glm(CASE_STATUS ~ ., data = H1B_Train))
 ```
 
 # PCR
 
-### PCR WITH CV - HW
-```{r}
+Since most variables are dummy variables, we do not use `scale = TRUE`.
+
+## PCR with CV
+```{r message=FALSE, warning=FALSE}
 # Create cross validation solution and check for lowest MSE
 set.seed(1234)
-pcr_fit <- pcr(CASE_STATUS ~ ., data = H1B_Train, scale = TRUE, validation = "CV")
+pcr_fit <- pcr(CASE_STATUS ~ ., data = H1B_Train, validation = "CV")
 summary(pcr_fit)
 ```
 
-### PCR M
+## PCR - Mean of Prediction Rate
 ```{r}
-pcr_fitM <- pcr(CASE_STATUS ~ ., data = H1B_Train, scale = TRUE, ncomp = 25)
+pcr_fitM <- pcr(CASE_STATUS ~ ., data = H1B_Train, ncomp = 25)
 yHat_pcr <- predict(pcr_fitM, newdata = H1B_Test)
 mean((yHat_pcr - H1B_Test$CASE_STATUS)^2)
 ```
 
+**Mean of prediction rate is 0.02391915**
+
+## PCR Prediction with H1B testing dataset by CV
+
 ```{r}
-R2_pcr  <- as.numeric(R2(pcr_reg, estimate="CV")$val)
-MSEP_pcr <- as.numeric(MSEP(pcr_reg, estimate="CV")$val)
- 
+R2_pcr  <- as.numeric(R2(pcr_fit, estimate="CV")$val)
+MSEP_pcr <- as.numeric(MSEP(pcr_fit, estimate="CV")$val)
 which_max_R2 <- which.max(R2_pcr)- 1
 which_max_MSEP<- which.min(MSEP_pcr)- 1
 max_R2_pcr <- max(R2_pcr)
@@ -130,26 +168,34 @@ min_MSEP_pcr <- min(MSEP_pcr)
 tibble(which_max_R2, which_max_MSEP,max_R2_pcr,min_MSEP_pcr)
 ```
 
-For PC regression the best model has all 24 PCs The best model has the highest R2 at 0.1488997 and the lowest MSEP at 0.02256555.
+**For PC regression the best model has all 111 PCs The best model has the highest R2 at 0.198 and the lowest MSEP at 0.0210**
 
 # PLS
 
-### PLSR WITH CV
-```{r}
+Since most variables are dummy variables, we do not use `scale = TRUE`.
+
+## PLSR with CV
+```{r i, message=FALSE, warning=FALSE}
 set.seed(1234)
-pls_fit <- plsr(CASE_STATUS ~ ., data = H1B_Train, scale = TRUE, validation = "CV")
+pls_fit <- plsr(CASE_STATUS ~ ., data = H1B_Train, validation = "CV")
 summary(pls_fit)
 ```
 
+## PLSR - Mean of Prediction Rate
+
 ```{r}
-pls_fitM <- plsr(CASE_STATUS ~ ., data = H1B_Train, scale = TRUE, ncomp = 17)
+pls_fitM <- plsr(CASE_STATUS ~ ., data = H1B_Train, ncomp = 17)
 yHat_pls <- predict(pls_fitM, newdata = H1B_Test)
 mean((yHat_pls - H1B_Test$CASE_STATUS)^2)
 ```
 
+**Mean of the prediction rate is 0.02290153.**
+
+## PLS - Prediction with H1B testing dataset by CV
+
 ```{r}
-R2_pls  <- as.numeric(R2(pls_reg, estimate="CV")$val)
-MSEP_pls <- as.numeric(MSEP(pls_reg, estimate="CV")$val)
+R2_pls  <- as.numeric(R2(pls_fit, estimate="CV")$val)
+MSEP_pls <- as.numeric(MSEP(pls_fit, estimate="CV")$val)
  
 which_max_R2_pls <- which.max(R2_pls) -1
 which_min_RSEP_pls <- which.min(MSEP_pls) -1
@@ -159,16 +205,17 @@ tibble(which_max_R2_pls, which_min_RSEP_pls,max_R2_pls,min_MSEP_pls)
 
 ```
 
-For PLS regression the best model has 8 PCs but barely. The best model has the highest cross-validation R2 at 0.02256751 and the lowest MSEP at 0.02256272.
+**For PLS regression the best model has 29 PCs. The best model has the highest cross-validation R2 at 0.198 and the lowest MSEP at 0.0210**
 
-```{r}
-Predicted.rr <- ifelse(yHat_pls >= 1.5, 2, 1)[,1]
-table(H1B_Test$CASE_STATUS, Predicted.rr)
+```{r eval=FALSE, include=FALSE}
+# Predicted.rr <- ifelse(yHat_pls >= 1.5, 2, 1)[,1]
+# table(H1B_Test$CASE_STATUS, Predicted.rr)
 ```
 
-#### plot
-```{r}
-layout(matrix(c(2,1), nrow = 2, ncol = 1, byrow = TRUE))
+# Plot PCA and PLS
+```{r eval=FALSE, include=FALSE}
+## NOT USING THIS PLOT TO KEEP IT AS IT IS
+layout(matrix(c(2,1), nrow = 1, ncol = 2, byrow = TRUE))
 validationplot(pcr_fit)
 mtext("PCR",side = 4)
 validationplot(pls_fit)
@@ -176,14 +223,11 @@ mtext("PLS",side = 4)
 mtext("Validation", side=6, outer=TRUE, cex=2)
 ```
 
-
-```{r}
-layout(matrix(c(2,1), nrow = 2, ncol = 2, byrow = TRUE))
-windows(width=9, height=6)
+```{r echo=FALSE}
+layout(matrix(c(2,1), nrow = 1, ncol = 2, byrow = TRUE))
 par(mfrow=c(1,2), oma=c(0,0,2,0))
 plot(pcr_fit, "validation", val.type = "MSEP", legendpos = "right", main = "PCR")
 plot(pls_fit, "validation", val.type = "MSEP", legendpos = "right", main = "PLS")
-title("My 'Title' in a strange place", line = -21, outer = TRUE)
-
+title("Validation Plot", line = -19, outer = TRUE)
 ```
 

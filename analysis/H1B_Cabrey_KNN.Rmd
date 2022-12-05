@@ -181,8 +181,10 @@ conf_matrix
 
 ```{r}
 training_pct <- .70
-class_rate = (table(Ytest, Yhat_7)[1, 1] + table(Ytest, Yhat_7)[2,2])/((1-training_pct)*((nrow(H1B_Test)+(nrow(H1B_Train)))))
-class_rate
+class_rate = (table(Ytest, Yhat_7)[1, 1] + table(Ytest, Yhat_7)[2, 2])/(27738)
+
+#Misclassification Rate is 1-Classification Rate
+1-class_rate
 ```
 
 

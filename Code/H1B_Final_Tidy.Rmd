@@ -19,10 +19,12 @@ library(fastDummies)
 
 H1B <- read_csv("https://media.githubusercontent.com/media/ccabes15/H1B_Project_ML/main/Data/H1B_Initial_Tidy.csv")
 
+#adding waiting time variable and deselecting unnecessary variables
 H1B <- H1B %>% 
-  mutate(Waiting_Period = DECISION_DATE- RECEIVED_DATE) |> 
+  mutate(WAITING_PERIOD = DECISION_DATE- RECEIVED_DATE) |> 
   dplyr::select(-c(DECISION_DATE, RECEIVED_DATE, PW_SOC_TITLE, JOB_TITLE, EMPLOYER_NAME, EMPLOYER_CITY, EMPLOYER_STATE_PROVINCE, wAGE_OFFER_AVG, WORKSITE_CITY, WORKSITE_STATE, JOB_TITLE, ACCEPT_FOREIGN_EDUCATION, FOREIGN_WORKER_BIRTH_COUNTRY, FOREIGN_WORKER_INFO_MAJOR, FOREIGN_WORKER_YRS_ED_COMP, FOREIGN_WORKER_ED_INST_COUNTRY, FOREIGN_WORKER_ALT_ED_EXP, FOREIGN_WORKER_ALT_OCC_EXP, OFFERED_TO_APPL_FOREIGN_WORKER))
 
+#Creating Hourly Wage Variable and solving NA issues with some other variables
 H1B <- H1B %>% 
   mutate(PW_WAGE_HOURLY = case_when(WAGE_OFFER_UNIT_OF_PAY == "Year" ~ PW_WAGE/2080,
                                     WAGE_OFFER_UNIT_OF_PAY == "Month" ~ PW_WAGE/160,
@@ -37,20 +39,20 @@ H1B <- H1B %>%
          FOREIGN_WORKER_EXP_WITH_EMPL = as.character(FOREIGN_WORKER_EXP_WITH_EMPL),
          FOREIGN_WORKER_EXP_WITH_EMPL = if_else(is.na(FOREIGN_WORKER_EXP_WITH_EMPL), "UNK", FOREIGN_WORKER_EXP_WITH_EMPL))
 
+#Dropping remaining NA's and converting Waiting Period to Numeric
 H1B <- H1B %>% 
   drop_na() %>% 
-  rename(WAITING_PERIOD = Waiting_Period) %>%
   mutate(WAITING_PERIOD = as.numeric(WAITING_PERIOD))
   
-
+#Creating Dummy Variables
 H1B_dummies <- dummy_cols(.data = H1B, select_columns = c("PW_SKILL_LEVEL", "WAGE_OFFER_UNIT_OF_PAY", "MINIMUM_EDUCATION", "COUNTRY_OF_CITIZENSHIP", "CLASS_OF_ADMISSION", "FOREIGN_WORKER_EDUCATION", "FOREIGN_WORKER_ED_INST_US", "FOREIGN_WORKER_REQ_EXPERIENCE", "FOREIGN_WORKER_EXP_WITH_EMPL"))
 
+#Deselecting Variables that dummies were created for
 H1B_dummies <- H1B_dummies %>%
   select(-c("PW_SKILL_LEVEL", "WAGE_OFFER_UNIT_OF_PAY", "MINIMUM_EDUCATION", "COUNTRY_OF_CITIZENSHIP", "CLASS_OF_ADMISSION", "FOREIGN_WORKER_EDUCATION", "FOREIGN_WORKER_ED_INST_US", "FOREIGN_WORKER_REQ_EXPERIENCE", "FOREIGN_WORKER_EXP_WITH_EMPL"))
 
 #For Connor's KNN
 H1B <- H1B %>% 
-  mutate(WAITING_PERIOD = as.numeric(WAITING_PERIOD))
   mutate(CASE_STATUS = as.factor(CASE_STATUS),
          CASE_STATUS = as.numeric(CASE_STATUS),
          REFILE = as.factor(REFILE),
@@ -96,19 +98,19 @@ H1B <- H1B %>%
          FOREIGN_WORKER_CURR_EMPLOYED = as.factor(FOREIGN_WORKER_CURR_EMPLOYED),
          FOREIGN_WORKER_CURR_EMPLOYED = as.numeric(FOREIGN_WORKER_CURR_EMPLOYED),
          EMPLOYER_COMPLETED_APPLICATION = as.factor(EMPLOYER_COMPLETED_APPLICATION),
-         EMPLOYER_COMPLETED_APPLICATION = as.numeric(EMPLOYER_COMPLETED_APPLICATION)) %>% 
-     rename(WAITING_PERIOD = Waiting_Period)
+         EMPLOYER_COMPLETED_APPLICATION = as.numeric(EMPLOYER_COMPLETED_APPLICATION)) 
 
 
-glimpse(H1B)
+#glimpse(H1B)
 
 ```
 
+### Training and Testing Data Splits
+
 ```{r}
+set.seed(1234)
 
 data_split <- initial_split(H1B, prop = 0.7)
-
-set.seed(1234)
 
 H1B_Train <- training(data_split)
 H1B_Test <- testing(data_split)
@@ -118,9 +120,8 @@ write.csv(H1B_Test, file = "../Data/H1B_Test.csv")
 ```
 
 ```{r}
-data_split <- initial_split(H1B_dummies, prop = 0.7)
-
 set.seed(1234)
+data_split <- initial_split(H1B_dummies, prop = 0.7)
 
 H1B_Train_dummies <- training(data_split)
 H1B_Test_dummies <- testing(data_split)

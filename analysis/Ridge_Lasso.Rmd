@@ -20,6 +20,76 @@ library(tidymodels)
 
 ### Loading Training and Testing Data
 
+```{r}
+H1B_dummies_Train <- read_csv("../Data/H1B_Train_Dummies.csv")
+H1B_dummies_Test <- read_csv("../Data/H1B_Test_Dummies.csv")
+```
+
+### Getting Training and Testing Design Matrix and Response Vector
+
+```{r}
+x.train.dummies <- as.matrix(H1B_dummies_Train[,3:ncol(H1B_dummies_Train)])
+y.train.dummies <- as.matrix(H1B_dummies_Train[,2])
+
+x.test.dummies <- as.matrix(H1B_dummies_Test[,3:ncol(H1B_dummies_Test)])
+y.test.dummies <- as.matrix(H1B_dummies_Test[,2])
+
+```
+
+### Running Ridge Regression
+
+```{r}
+set.seed(123)
+train_rr_cv_dummies <- cv.glmnet(x.train.dummies, as.factor(y.train.dummies), alpha=0, family = "binomial")
+
+plot(train_rr_cv_dummies)
+```
+
+### Finding Prediction MSE and Classification Rate for Ridge
+
+```{r}
+pred_test_rr_dummies <- bind_cols(predict(train_rr_cv_dummies, newx = x.test.dummies, s = "lambda.1se", type="response"),
+                      predict(train_rr_cv_dummies, newx = x.test.dummies, s = "lambda.min", type="response"))
+
+round(colMeans((pred_test_rr_dummies - y.test.dummies)^2), digits = 2)
+
+Predicted.rr.dummies <- ifelse(pred_test_rr_dummies >= 0.5, 1, 0)[,1]
+table(H1B_Test_dummies$CASE_STATUS, Predicted.rr.dummies)
+
+#(86+26919)/(86+684+49+26919) = 97.4%
+```
+
+### Running Lasso Regression
+
+```{r}
+set.seed(123)
+train_lr_cv_dummies <- cv.glmnet(x.train.dummies, as.factor(y.train.dummies), family = "binomial")
+
+#Plotting
+plot(train_lr_cv_dummies)
+
+#Looking at Coefficients
+coef(train_lr_cv_dummies)
+```
+
+### Getting Prediction MSE and Classification Rate for Lasso
+
+```{r}
+pred_test_lr_dummies <- bind_cols(predict(train_lr_cv_dummies, newx = x.test.dummies, s = "lambda.1se", type="response"),
+                      predict(train_lr_cv_dummies, newx = x.test.dummies, s = "lambda.min", type="response"))
+
+round(colMeans((pred_test_lr_dummies-y.test.dummies)^2), digits = 2)
+
+Predicted.lr.dummies <- ifelse(pred_test_lr_dummies >= 0.5, 1, 0)[,1]
+table(H1B_Test_dummies$CASE_STATUS, Predicted.lr.dummies)
+
+#(109+26911)/(109+661+57+26911) = 97.4%
+```
+
+############################################################################
+
+First attempt at running regression without dummy variables
+
 ```{r message=FALSE, warning=FALSE}
 H1B <- read_csv("https://media.githubusercontent.com/media/ccabes15/H1B_Project_ML/main/Data/H1B_Initial_Tidy.csv")
 
@@ -44,9 +114,7 @@ H1B <- H1B %>%
 H1B <- H1B %>% 
   drop_na() %>% 
   rename(WAITING_PERIOD = Waiting_Period) %>%
-  mutate(CASE_STATUS = as.factor(CASE_STATUS),
-         CASE_STATUS = as.numeric(CASE_STATUS),
-         REFILE = as.factor(REFILE),
+  mutate(REFILE = as.factor(REFILE),
          REFILE = as.numeric(REFILE),
          FW_OWNERSHIP_INTEREST = as.factor(FW_OWNERSHIP_INTEREST),
          FW_OWNERSHIP_INTEREST = as.numeric(FW_OWNERSHIP_INTEREST),
@@ -120,10 +188,6 @@ y.test <- as.matrix(H1B_Test[,1])
 
 ```{r}
 #Running Ridge Regression
-train_rr <- glmnet(as.matrix(x.train), as.matrix(y.train), alpha = 0, family = "binomial")
-
-summary(train_rr)
-
 set.seed(123)
 train_rr_cv <- cv.glmnet(x.train, as.factor(y.train), alpha=0, family = "binomial")
 #train.rr1_cv
@@ -133,16 +197,17 @@ plot(train_rr_cv)
 ```
 
 ```{r}
-pred_test_rr <- bind_cols(predict(train_rr_cv, newx = x.test, s = "lambda.1se"),
-                      predict(train_rr_cv, newx = x.test, s = "lambda.min"))
+pred_test_rr <- bind_cols(predict(train_rr_cv, newx = x.test, s = "lambda.1se", type="response"),
+                      predict(train_rr_cv, newx = x.test, s = "lambda.min", type="response"))
 
 round(colMeans((pred_test_rr-y.test)^2), digits = 2)
 
-Predicted.rr <- ifelse(pred_test_rr >= 1.5, 2, 1)[,1]
+Predicted.rr <- ifelse(pred_test_rr >= 0.5, 1, 0)[,1]
 table(H1B_Test$CASE_STATUS, Predicted.rr)
 
-(139+26747)/(139+651+201+26747)
+#(54+26915)/(54+736+33+26915) = 97.2%
 ```
+
 
 ```{r}
 set.seed(123)
@@ -156,14 +221,13 @@ coef(train_lr_cv)
 ```
 
 ```{r}
-pred_test_lr <- bind_cols(predict(train_lr_cv, newx = x.test, s = "lambda.1se"),
-                      predict(train_lr_cv, newx = x.test, s = "lambda.min"))
+pred_test_lr <- bind_cols(predict(train_lr_cv, newx = x.test, s = "lambda.1se", type="response"),
+                      predict(train_lr_cv, newx = x.test, s = "lambda.min", type="response"))
 
 round(colMeans((pred_test_lr-y.test)^2), digits = 2)
 
-Predicted.lr <- ifelse(pred_test_lr >= 1.5, 2, 1)[,1]
+Predicted.lr <- ifelse(pred_test_lr >= 0.5, 1, 0)[,1]
 table(H1B_Test$CASE_STATUS, Predicted.lr)
 
-(51+26919)/(51+739+29+26919)
+#(54+26917)/(54+736+31+26917) = 97.2%
 ```
-

@@ -1,0 +1,189 @@
+---
+title: "pca/pls"
+author: "Yuka Chen"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+# Load Library
+```{r message=FALSE}
+library(tidyverse)
+library(tidymodels)
+library(GGally)
+library(pls)
+library(cowplot)
+library(gridExtra)                        # Load gridExtra package
+library(MASS)
+library(boot)
+library(leaps)
+library(glmnet)
+library(magrittr)
+library(psych)
+library(knitr)
+
+```
+
+# Load Datasets - H1B_Train_Dummies/H1B_Test_Dummie
+```{r message=FALSE, warning=FALSE}
+H1B_Train <- read_csv("../Data/H1B_Train_Dummies.csv",col_select = c(2:267))
+H1B_Test <- read_csv("../Data/H1B_Test_Dummies.csv",col_select = c(2:267))
+
+```
+
+# Correlation:
+```{r}
+
+library(DT)
+H1B_COR = round(cor(H1B_Train),
+      digits = 2)
+datatable(H1B_COR)
+```
+
+Count NA in each row just to make sure there's no NA in the datasets anymore
+```{r}
+map_dbl(H1B_Train, ~ sum(is.na(.)))
+# no NA
+```
+
+```{r}
+cor(H1B_Train, use = "complete.obs")
+```
+
+```{r}
+abs_cor = (abs(cor(H1B_Train, use = "complete.obs"))-.1) |> 
+  round(0) |> 
+  kbl() |> 
+  kable_styling()
+
+```
+
+```{r}
+reg <-  glm(CASE_STATUS ~ ., data = H1B_Train)
+X <-  model.matrix(reg)
+```
+
+```{r warning=FALSE, include=FALSE}
+pc <- stats::prcomp(X)
+pc
+```
+
+```{r include=FALSE}
+100*(pc$sdev/sum(pc$sdev)) |> round(3)
+```
+
+```{r}
+summary(pc)
+kable(summary(iq_fit2)$coefficients, digits=3)
+```
+
+```{r}
+screeplot(pc)
+```
+
+```{r}
+pc$rotation[,1] |> round(3)
+```
+
+```{r}
+pc_s <- prcomp(X[,-1], scale = TRUE)
+pc_s
+```
+
+```{r}
+summary(pc_s)
+```
+
+```{r}
+screeplot(pc_s)
+```
+
+```{r}
+summary(lm(CASE_STATUS ~ ., data = H1B_Train))
+```
+
+# PCR
+
+### PCR WITH CV - HW
+```{r}
+# Create cross validation solution and check for lowest MSE
+set.seed(1234)
+pcr_fit <- pcr(CASE_STATUS ~ ., data = H1B_Train, scale = TRUE, validation = "CV")
+summary(pcr_fit)
+```
+
+### PCR M
+```{r}
+pcr_fitM <- pcr(CASE_STATUS ~ ., data = H1B_Train, scale = TRUE, ncomp = 25)
+yHat_pcr <- predict(pcr_fitM, newdata = H1B_Test)
+mean((yHat_pcr - H1B_Test$CASE_STATUS)^2)
+```
+
+```{r}
+R2_pcr  <- as.numeric(R2(pcr_reg, estimate="CV")$val)
+MSEP_pcr <- as.numeric(MSEP(pcr_reg, estimate="CV")$val)
+ 
+which_max_R2 <- which.max(R2_pcr)- 1
+which_max_MSEP<- which.min(MSEP_pcr)- 1
+max_R2_pcr <- max(R2_pcr)
+min_MSEP_pcr <- min(MSEP_pcr)
+
+tibble(which_max_R2, which_max_MSEP,max_R2_pcr,min_MSEP_pcr)
+```
+
+For PC regression the best model has all 24 PCs The best model has the highest R2 at 0.1488997 and the lowest MSEP at 0.02256555.
+
+# PLS
+
+### PLSR WITH CV
+```{r}
+set.seed(1234)
+pls_fit <- plsr(CASE_STATUS ~ ., data = H1B_Train, scale = TRUE, validation = "CV")
+summary(pls_fit)
+```
+
+```{r}
+pls_fitM <- plsr(CASE_STATUS ~ ., data = H1B_Train, scale = TRUE, ncomp = 17)
+yHat_pls <- predict(pls_fitM, newdata = H1B_Test)
+mean((yHat_pls - H1B_Test$CASE_STATUS)^2)
+```
+
+```{r}
+R2_pls  <- as.numeric(R2(pls_reg, estimate="CV")$val)
+MSEP_pls <- as.numeric(MSEP(pls_reg, estimate="CV")$val)
+ 
+which_max_R2_pls <- which.max(R2_pls) -1
+which_min_RSEP_pls <- which.min(MSEP_pls) -1
+max_R2_pls <- max(R2_pls)
+min_MSEP_pls <- min(MSEP_pls)
+tibble(which_max_R2_pls, which_min_RSEP_pls,max_R2_pls,min_MSEP_pls)
+
+```
+
+For PLS regression the best model has 8 PCs but barely. The best model has the highest cross-validation R2 at 0.02256751 and the lowest MSEP at 0.02256272.
+
+```{r}
+Predicted.rr <- ifelse(yHat_pls >= 1.5, 2, 1)[,1]
+table(H1B_Test$CASE_STATUS, Predicted.rr)
+```
+
+#### plot
+```{r}
+layout(matrix(c(2,1), nrow = 2, ncol = 1, byrow = TRUE))
+validationplot(pcr_fit)
+mtext("PCR",side = 4)
+validationplot(pls_fit)
+mtext("PLS",side = 4)
+mtext("Validation", side=6, outer=TRUE, cex=2)
+```
+
+
+```{r}
+layout(matrix(c(2,1), nrow = 2, ncol = 2, byrow = TRUE))
+windows(width=9, height=6)
+par(mfrow=c(1,2), oma=c(0,0,2,0))
+plot(pcr_fit, "validation", val.type = "MSEP", legendpos = "right", main = "PCR")
+plot(pls_fit, "validation", val.type = "MSEP", legendpos = "right", main = "PLS")
+title("My 'Title' in a strange place", line = -21, outer = TRUE)
+
+```
+

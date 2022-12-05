@@ -54,9 +54,11 @@ pred_test_rr_dummies <- bind_cols(predict(train_rr_cv_dummies, newx = x.test.dum
 round(colMeans((pred_test_rr_dummies - y.test.dummies)^2), digits = 2)
 
 Predicted.rr.dummies <- ifelse(pred_test_rr_dummies >= 0.5, 1, 0)[,1]
-table(H1B_Test_dummies$CASE_STATUS, Predicted.rr.dummies)
+table(H1B_dummies_Test$CASE_STATUS, Predicted.rr.dummies)
 
-#(86+26919)/(86+684+49+26919) = 97.4%
+class_rate1 = (table(y.test.dummies, Predicted.rr.dummies)[1, 1] + table(y.test.dummies, Predicted.rr.dummies)[2, 2])/(27738)
+
+1-class_rate1
 ```
 
 ### Running Lasso Regression
@@ -81,9 +83,12 @@ pred_test_lr_dummies <- bind_cols(predict(train_lr_cv_dummies, newx = x.test.dum
 round(colMeans((pred_test_lr_dummies-y.test.dummies)^2), digits = 2)
 
 Predicted.lr.dummies <- ifelse(pred_test_lr_dummies >= 0.5, 1, 0)[,1]
-table(H1B_Test_dummies$CASE_STATUS, Predicted.lr.dummies)
+table(H1B_dummies_Test$CASE_STATUS, Predicted.lr.dummies)
 
-#(109+26911)/(109+661+57+26911) = 97.4%
+class_rate2 = (table(y.test.dummies, Predicted.lr.dummies)[1, 1] + table(y.test.dummies, Predicted.lr.dummies)[2, 2])/(27738)
+
+1-class_rate2
+
 ```
 
 ############################################################################

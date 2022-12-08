@@ -1,0 +1,171 @@
+---
+title: "ML_Project"
+author: "Concillia Mpofu"
+date: "2022-12-04"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ISLR2)
+library(leaps)
+library(tidyverse)
+library(caret)
+library(broom)
+library(boot)
+```
+
+Unlike other models ran for this data set, in this model i used the data set without dummy variables because of the limitation of R variable selection couldn't be done efficiently. 
+
+```{r}
+set.seed(12345)
+#Loading the data 
+H1B_Full <-read_csv('../Data/H1B_Full.csv')
+
+H1B_Test <-read_csv('../Data/H1B_Test.csv')
+
+H1B_Train = subset(H1B_Train, select = -c(1))
+H1B_Test = subset(H1B_Test, select = -c(1))
+
+```
+
+```{r}
+H1B_Train <- H1B_Train %>% 
+  mutate(CASE_STATUS = as.factor(CASE_STATUS),
+         REFILE = as.factor(REFILE),
+         FW_OWNERSHIP_INTEREST = as.factor(FW_OWNERSHIP_INTEREST),
+         PW_SKILL_LEVEL = as.factor(PW_SKILL_LEVEL),
+         WAGE_OFFER_UNIT_OF_PAY = as.factor(WAGE_OFFER_UNIT_OF_PAY),
+         MINIMUM_EDUCATION = as.factor(MINIMUM_EDUCATION),
+         REQUIRED_TRAINING = as.factor(REQUIRED_TRAINING),
+         REQUIRED_EXPERIENCE = as.factor(REQUIRED_EXPERIENCE),
+         ACCEPT_ALT_OCCUPATION = as.factor(ACCEPT_ALT_OCCUPATION),
+         FOREIGN_LANGUAGE_REQUIRED = as.factor(FOREIGN_LANGUAGE_REQUIRED),
+         FOREIGN_WORKER_LIVE_ON_PREM = as.factor(FOREIGN_WORKER_LIVE_ON_PREM),
+         FOREIGN_WORKER_LIVE_IN_DOM_SER = as.factor(FOREIGN_WORKER_LIVE_IN_DOM_SER),
+         PROFESSIONAL_OCCUPATION = as.factor(PROFESSIONAL_OCCUPATION),
+         APP_FOR_COLLEGE_U_TEACHER = as.factor(APP_FOR_COLLEGE_U_TEACHER),
+         COUNTRY_OF_CITIZENSHIP = as.factor(COUNTRY_OF_CITIZENSHIP),
+         CLASS_OF_ADMISSION = as.factor(CLASS_OF_ADMISSION),
+         FOREIGN_WORKER_EDUCATION = as.factor(FOREIGN_WORKER_EDUCATION),
+         FOREIGN_WORKER_ED_INST_US = as.factor(FOREIGN_WORKER_ED_INST_US),
+         FOREIGN_WORKER_REQ_EXPERIENCE = as.factor(FOREIGN_WORKER_REQ_EXPERIENCE),
+         FOREIGN_WORKER_EXP_WITH_EMPL = as.factor(FOREIGN_WORKER_EXP_WITH_EMPL),
+         FOREIGN_WORKER_EMPL_PAY_FOR_ED = as.factor(FOREIGN_WORKER_EMPL_PAY_FOR_ED),
+         FOREIGN_WORKER_CURR_EMPLOYED = as.factor(FOREIGN_WORKER_CURR_EMPLOYED),
+         EMPLOYER_COMPLETED_APPLICATION = as.factor(EMPLOYER_COMPLETED_APPLICATION)) 
+
+H1B_Test <- H1B_Test %>% 
+  mutate(CASE_STATUS = as.factor(CASE_STATUS),
+         REFILE = as.factor(REFILE),
+         FW_OWNERSHIP_INTEREST = as.factor(FW_OWNERSHIP_INTEREST),
+         PW_SKILL_LEVEL = as.factor(PW_SKILL_LEVEL),
+         WAGE_OFFER_UNIT_OF_PAY = as.factor(WAGE_OFFER_UNIT_OF_PAY),
+         MINIMUM_EDUCATION = as.factor(MINIMUM_EDUCATION),
+         REQUIRED_TRAINING = as.factor(REQUIRED_TRAINING),
+         REQUIRED_EXPERIENCE = as.factor(REQUIRED_EXPERIENCE),
+         ACCEPT_ALT_OCCUPATION = as.factor(ACCEPT_ALT_OCCUPATION),
+         FOREIGN_LANGUAGE_REQUIRED = as.factor(FOREIGN_LANGUAGE_REQUIRED),
+         FOREIGN_WORKER_LIVE_ON_PREM = as.factor(FOREIGN_WORKER_LIVE_ON_PREM),
+         FOREIGN_WORKER_LIVE_IN_DOM_SER = as.factor(FOREIGN_WORKER_LIVE_IN_DOM_SER),
+         PROFESSIONAL_OCCUPATION = as.factor(PROFESSIONAL_OCCUPATION),
+         APP_FOR_COLLEGE_U_TEACHER = as.factor(APP_FOR_COLLEGE_U_TEACHER),
+         COUNTRY_OF_CITIZENSHIP = as.factor(COUNTRY_OF_CITIZENSHIP),
+         CLASS_OF_ADMISSION = as.factor(CLASS_OF_ADMISSION),
+         FOREIGN_WORKER_EDUCATION = as.factor(FOREIGN_WORKER_EDUCATION),
+         FOREIGN_WORKER_ED_INST_US = as.factor(FOREIGN_WORKER_ED_INST_US),
+         FOREIGN_WORKER_REQ_EXPERIENCE = as.factor(FOREIGN_WORKER_REQ_EXPERIENCE),
+         FOREIGN_WORKER_EXP_WITH_EMPL = as.factor(FOREIGN_WORKER_EXP_WITH_EMPL),
+         FOREIGN_WORKER_EMPL_PAY_FOR_ED = as.factor(FOREIGN_WORKER_EMPL_PAY_FOR_ED),
+         FOREIGN_WORKER_CURR_EMPLOYED = as.factor(FOREIGN_WORKER_CURR_EMPLOYED),
+         EMPLOYER_COMPLETED_APPLICATION = as.factor(EMPLOYER_COMPLETED_APPLICATION)) 
+
+#H1B_Train = subset(H1B_Train, select = -c(COUNTRY_OF_CITIZENSHIP))
+#H1B_Test = subset(H1B_Test, select = -c(COUNTRY_OF_CITIZENSHIP) )
+```
+
+
+
+Based on the variables we selected we will now train the model. 
+```{r}
+#Logistic Regression using family binomial indicating that we have categorical variables
+
+set.seed(123)
+
+H1B_logit_glm <-  glm(CASE_STATUS ~ ., data = H1B_Full, family = binomial )
+
+H1B_logit_glm
+```
+
+```{r}
+H1B_logit_Full <- cv.glm(data = H1B_Full, CASE_STATUS ~ ., glmfit = H1B_logit_glm, K=3)
+
+
+H1B_logit_Full$delta[2]
+```
+
+
+```{r}
+#Removed country of citizenship 
+H1B_logit_reduced <-  glm(CASE_STATUS ~ REFILE+FW_OWNERSHIP_INTEREST + PW_SKILL_LEVEL + WAGE_OFFER_UNIT_OF_PAY + MINIMUM_EDUCATION + REQUIRED_TRAINING + REQUIRED_EXPERIENCE + ACCEPT_ALT_OCCUPATION +  FOREIGN_LANGUAGE_REQUIRED + FOREIGN_WORKER_LIVE_ON_PREM + FOREIGN_WORKER_LIVE_IN_DOM_SER +PROFESSIONAL_OCCUPATION + APP_FOR_COLLEGE_U_TEACHER + CLASS_OF_ADMISSION + FOREIGN_WORKER_EDUCATION + FOREIGN_WORKER_YRS_SINCE_ED + FOREIGN_WORKER_ED_INST_US + FOREIGN_WORKER_REQ_EXPERIENCE + FOREIGN_WORKER_EXP_WITH_EMPL + FOREIGN_WORKER_EMPL_PAY_FOR_ED + FOREIGN_WORKER_CURR_EMPLOYED + EMPLOYER_COMPLETED_APPLICATION + WAITING_PERIOD + PW_WAGE_HOURLY, data = H1B_Train,family = binomial)
+
+#summary(H1B_logit_reduced)
+```
+
+```{r}
+glance(H1B_logit_Full)
+glance(H1B_logit_reduced)
+```
+
+
+After training the model we will now use it test to predict the Case Status.
+```{r}
+#Prediction using the type response so that we obtain the predicted probabilities
+
+H1B_pred<- predict(H1B_logit_Full, newdata = H1B_Test, type="response")
+```
+
+
+
+```{r}
+#Calculation of the model error rate 
+predicted_logit <- ifelse(H1B_pred >= 0.5, 1, 0)
+
+#Prediction Table
+table( predicted_logit,H1B_Test$CASE_STATUS )
+
+
+```
+
+```{r}
+#calculate classification error rate.
+
+class_rate <- 1- (26881+68)/(27738)
+class_rate
+```
+
+The Logit model has 0.02844473 classification error.
+
+
+
+To get more data about the performance of the model we will use the caret package to extra more information.
+
+```{r}
+#Arranging predictions and true values in a cross table.
+(H1B_test_prediction = table(predicted = predicted_logit, actual = H1B_Test$CASE_STATUS))
+```
+
+```{r}
+#Computing the confusion matrix from the caret package
+(H1B_test_confusionmtrx = confusionMatrix(H1B_test_prediction))
+```
+The model has an accuracy 0.9762 rate. From our statistics we not that the model accurately predicts 0 which is the group of applicants that are denied HIB visas. 
+
+Conclusion
+
+While this model performs well with an error rate of 0.02844473, it is not accurate as the model had over 100 variables if converting some of the variables to dummies hence the subsets couldn't run efficiently to select the correct variables. The variables were selected on double type or variables instead of factor variables hence the observation were treated as continuous variables instead of categorical variables. Hence i can not recommend this model for H1B Visa Case Status Predictions. 
+
+

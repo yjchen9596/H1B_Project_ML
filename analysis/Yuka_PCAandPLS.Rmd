@@ -35,11 +35,9 @@ library(knitr)
 
 # Load Datasets
 
-
-
 ```{r message=FALSE, warning=FALSE}
-H1B_Train <- read_csv("../Data/H1B_Train_Dummies.csv",col_select = c(2:267))
-H1B_Test <- read_csv("../Data/H1B_Test_Dummies.csv",col_select = c(2:267))
+H1B_Train <- read_csv("../Data/H1B_Train_Dummies.csv",col_select = c(2:163))
+H1B_Test <- read_csv("../Data/H1B_Test_Dummies.csv",col_select = c(2:164))
 
 dim(H1B_Train)
 dim(H1B_Test)
@@ -56,7 +54,6 @@ We set the initial seeds and percentage at the data cleaning process, if you wan
 
 ## Correlation:
 ```{r}
-
 library(DT)
 H1B_COR = round(cor(H1B_Train),
       digits = 2)

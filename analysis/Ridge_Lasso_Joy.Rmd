@@ -1,0 +1,159 @@
+---
+title: "H1B - Ridge/Lasso"
+author: "Jeremy Joy"
+date: "2022-12-04"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+library(tidyverse)
+library(broom)
+library(janitor)
+library(glmnet)
+library(leaps)
+library(tidymodels)
+```
+
+### Loading Training and Testing Data
+
+```{r message=FALSE, warning=FALSE}
+H1B_dummies_Train <- read_csv("../Data/H1B_Train_Dummies.csv")
+H1B_dummies_Test <- read_csv("../Data/H1B_Test_Dummies.csv")
+```
+
+Note: The data includes dummy variables for all categorical variables (PW_SKILL_LEVEL, WAGE_OFFER_UNIT_OF_PAY, MINIMUM_EDUCATION, COUNTRY_OF_CITIZENSHIP, CLASS_OF_ADMISSION, FOREIGN_WORKER_EDUCATION, FOREIGN_WORKER_ED_INST_US, FOREIGN_WORKER_REQ_EXPERIENCE, FOREIGN_WORKER_EXP_WITH_EMPL). This was necessary so that the cv.glmnet() function would work for both Ridge and Lasso regression. It seemed to have an issue handling categorical variables as factors. 
+
+H1B Training Data - Has 3,510 observations with 162 predictor variables (including dummies)
+H1B Testing Data - Has 1,505 observations 
+
+### Getting Training and Testing Design Matrices and Response Vectors
+
+```{r}
+x.train.dummies <- as.matrix(H1B_dummies_Train[,3:ncol(H1B_dummies_Train)])
+y.train.dummies <- as.matrix(H1B_dummies_Train[,2])
+
+x.test.dummies <- as.matrix(H1B_dummies_Test[,3:ncol(H1B_dummies_Test)])
+y.test.dummies <- as.matrix(H1B_dummies_Test[,2])
+
+```
+
+### Running Ridge Regression
+
+Ridge regression seems beneficial for this data due to the high number of predictor variables and because it is a shrinkage method that is useful in reducing multicollinearity as well as variance between estimates. 
+
+```{r}
+train_rr_dummies <- glmnet(x.train.dummies, y.train.dummies, alpha=0)
+plot(train_rr_dummies)
+```
+
+Here we can see that as the L1 norm (gamma) decreases more parameters get closer to zero.
+
+```{r}
+plot(train_rr_dummies, xvar = "lambda")
+```
+
+In this plot we can see that as lambda increases the parameters get closer to zero and the weight of the penality for larger coefficents increases. 
+
+```{r}
+set.seed(123)
+rr_cv_dummies <- cv.glmnet(x.train.dummies, y.train.dummies, alpha=0)
+rr_cv_dummies
+```
+
+Here we can see that lambda.min is 0.049 and lambda.1se is 0.162. Let's take a look at the cross-validation curve. 
+
+```{r}
+plot(rr_cv_dummies)
+```
+
+In the plot we can clearly see that as lambda increases the MSE increases. Notice the most left dashed line corresponds to lambda min and the other dashe line corresponds to lambda.1se. No coefficients or variables were eliminated from this model. 
+
+### Finding Prediction MSE and Classification Rate for Ridge
+
+```{r}
+pred_test_rr_dummies <- bind_cols(predict(rr_cv_dummies, newx = x.test.dummies, s = "lambda.1se", type="response"),
+                      predict(rr_cv_dummies, newx = x.test.dummies, s = "lambda.min", type="response"))
+
+round(colMeans((pred_test_rr_dummies - y.test.dummies)^2), digits = 2)
+
+Predicted.rr.dummies <- ifelse(pred_test_rr_dummies >= 0.5, 1, 0)[,1]
+table(H1B_dummies_Test$CASE_STATUS, Predicted.rr.dummies)
+
+class_rate1 = (506+650)/(506+243+106+650)
+
+1- class_rate1
+```
+
+The RMSE for Ridge regression using our data was 0.16 and the error classification rate was 23.7%
+
+### Running Lasso Regression
+
+Lasso regression seems like an even better variation of ridge regression to use because ridge regression does not shrink parameters to zero. Our dataset including the dummy variables seems especially suited for LASSO as it has high dimension (a lot of predictors) and a good amount of correlation. Using LAsso, we can more easily identify the variables that are most strongly associated with H1B Visa approval.  
+
+```{r}
+train_lr_dummies <- glmnet(x.train.dummies, y.train.dummies)
+plot(train_lr_dummies)
+```
+
+Here we can see that as the L1 norm (gamma) decreases the number of non-zero parameters also decrease.
+
+```{r}
+plot(train_lr_dummies, xvar = "lambda", label = TRUE)
+```
+
+In this plot we can see that as lambda increases the number of non-zero parameters decreases. 
+
+```{r}
+set.seed(123)
+lr_cv_dummies <- cv.glmnet(x.train.dummies, y.train.dummies)
+lr_cv_dummies
+```
+
+Here we can see that lambda.min is 0.008 and lambda.1se is 0.013. Let's take a look at the cross-validation curve. 
+
+```{r}
+#Plotting
+plot(lr_cv_dummies)
+```
+
+In the plot we can clearly see that as lambda increases the MSE first decreases a little and then increases sharply after lamba.min and lambda.1st. Also, that the number of non-zero paramaters also decreased significantly as lambda increased. Let's take a look at the coefficients of the predictive parameters and see what coefficients were eliminated from the model. 
+
+```{r}
+#Looking at Coefficients
+coef(lr_cv_dummies)
+```
+
+Here are some interesting things:
+- Required experience, profession occupation, skill level and unit of pay were all eliminated. Many countries and other categorical dummy variables were also eliminated.
+- Alternative occupation accepted, foreign language required, years since graduation, whether your current employed, your employer completing you application, the waiting period and hour wage were all kept. 
+- Greece, Iraq, UK and the United states all had a negative impact on acceptance and India had a positive impact.
+- The worker having education degrees including law degrees and medical degrees had a positive impact.
+- Going to school in the US also had a positive impact. 
+- Lastly already being a H1B recepient also had a positive impact on approval
+
+### Getting Prediction MSE and Classification Rate for Lasso
+
+```{r}
+pred_test_lr_dummies <- bind_cols(predict(lr_cv_dummies, newx = x.test.dummies, s = "lambda.1se", type="response"),
+                      predict(lr_cv_dummies, newx = x.test.dummies, s = "lambda.min", type="response"))
+
+round(colMeans((pred_test_lr_dummies-y.test.dummies)^2), digits = 2)
+
+Predicted.lr.dummies <- ifelse(pred_test_lr_dummies >= 0.5, 1, 0)[,1]
+table(H1B_dummies_Test$CASE_STATUS, Predicted.lr.dummies)
+
+class_rate2 = (501+668)/(501+248+88+668)
+
+1-class_rate2
+
+```
+
+The RMSE for LASSO regression using our data was 0.16 and the error classification rate was 22.3%
+
+## Conclusion
+
+Overall, even though the prediction RMSE was the same for both, I think the LASSO regression was the best out of the two because it allowed us to identify the variables that are most strongly associated with H1B Visa approval.

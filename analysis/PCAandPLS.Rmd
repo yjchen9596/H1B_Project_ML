@@ -1,0 +1,275 @@
+---
+title: "PCA and PLS"
+author: "Yuka Chen"
+date: "`r Sys.Date()`"
+output: rmdformats::material
+
+---
+```{r include=FALSE}
+knitr::opts_chunk$set(
+	message = FALSE,
+	warning = FALSE,
+	tidy = TRUE,
+	error = TRUE,
+	tidy.opts = list(width.cutoff = 60)
+)
+```
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Load Library
+library(tidyverse)
+library(tidymodels)
+library(GGally)
+library(pls)
+library(cowplot)
+library(gridExtra)                        # Load gridExtra package
+library(MASS)
+library(boot)
+library(leaps)
+library(glmnet)
+library(magrittr)
+library(psych)
+library(knitr)
+
+```
+
+# Load Datasets
+
+```{r message=FALSE, warning=FALSE}
+H1B_Train <- read_csv("../Data/H1B_Train_Dummies.csv",col_select = c(2:164))
+H1B_Test <- read_csv("../Data/H1B_Test_Dummies.csv",col_select = c(2:164))
+
+dim(H1B_Train)
+dim(H1B_Test)
+
+```
+
+Since we transfer the data to dummy variables, there are many columns and it is hard to read the summary, so I set some code chuck "run the code but show nothing"
+
+We set the initial seeds and percentage at the data cleaning process, if you want to check you could go to Data/Code to find how we did.
+- For H1B training data set, we get 163 variables and 3510 rows. 
+- For H1B training data set, we get 163 variables and 1505 rows. 
+
+
+
+## Correlation:
+```{r}
+library(DT)
+H1B_COR = round(cor(H1B_Train),
+      digits = 2)
+
+datatable(H1B_COR)
+```
+
+## Count NA
+
+Count NA in each row just to make sure there's no NA in the datasets anymore.
+
+```{r include=FALSE}
+map_dbl(H1B_Train, ~ sum(is.na(.)))
+# no NA
+```
+
+There is no NA in this data set as we cleaned it in the data cleaning process
+
+## Correlation Table
+```{r}
+cor(H1B_Train, use = "complete.obs") |> 
+  datatable()
+```
+## Correlation Table - as Absolute Value
+
+```{r}
+abs_cor = (abs(cor(H1B_Train, use = "complete.obs"))-.1) |> 
+  round(0)
+datatable(abs_cor)
+```
+# GLM
+
+## Run a simple model for Priciple Conponent
+
+```{r}
+reg <-  glm(CASE_STATUS ~ ., data = H1B_Train)
+X <-  model.matrix(reg)
+```
+
+```{r echo=T, results='hide'}
+pc <- stats::prcomp(X)
+pc
+```
+
+```{r echo=T, results='hide'}
+100*(pc$sdev/sum(pc$sdev)) |> round(3)
+```
+
+```{r echo=T, results='hide'}
+## the output is too long so the r chuck 
+## set it as not showing output
+summary(pc)
+```
+
+## PC Plot
+```{r}
+screeplot(pc)
+```
+
+```{r echo=T, results='hide'}
+pc$rotation[,1] |> round(3)
+```
+
+```{r echo=T, results='hide'}
+pc_s <- prcomp(X[,-1])
+pc_s
+summary(pc_s)
+```
+
+
+```{r echo=T, results='hide'}
+screeplot(pc_s)
+```
+
+```{r message=FALSE, warning=FALSE}
+summary(glm(CASE_STATUS ~ ., data = H1B_Train))
+```
+
+# PCR
+
+Since most variables are dummy variables, we do not use `scale = TRUE`.
+
+## PCR with CV
+```{r message=FALSE, warning=FALSE}
+# Create cross validation solution and check for lowest MSE
+set.seed(1234)
+pcr_fit <- pcr(CASE_STATUS ~ ., data = H1B_Train, validation = "CV")
+summary(pcr_fit)
+```
+
+## PCR - Mean of Prediction Rate
+```{r}
+pcr_fitM <- pcr(CASE_STATUS ~ ., data = H1B_Train, ncomp = 25)
+yHat_pcr <- predict(pcr_fitM, newdata = H1B_Test)
+mean((yHat_pcr - H1B_Test$CASE_STATUS)^2)
+```
+
+**Mean of prediction rate is 0.182 with 162 comps**
+
+## PCR Prediction with H1B testing dataset by CV
+
+```{r}
+R2_pcr  <- as.numeric(R2(pcr_fit, estimate="CV")$val)
+MSEP_pcr <- as.numeric(MSEP(pcr_fit, estimate="CV")$val)
+which_max_R2 <- which.max(R2_pcr)- 1
+which_max_MSEP<- which.min(MSEP_pcr)- 1
+max_R2_pcr <- max(R2_pcr)
+min_MSEP_pcr <- min(MSEP_pcr)
+
+tibble(which_max_R2, which_max_MSEP,max_R2_pcr,min_MSEP_pcr)
+```
+
+**For PC regression the best model has 68 PC. The best model has the highest R2 at 0.392 and the lowest MSEP at 0.152**
+
+```{r}
+pcr_fit2 = pcr(CASE_STATUS ~ ., data = H1B_Train, ncomp= 68)
+summary(pcr_fit2)
+```
+
+Since most variables are dummy variables, we do not use `scale = TRUE`.
+
+## PLSR with CV
+```{r i, message=FALSE, warning=FALSE}
+set.seed(1234)
+pls_fit <- plsr(CASE_STATUS ~ ., data = H1B_Train, validation = "CV")
+summary(pls_fit)
+```
+
+## PLSR - Mean of Prediction Rate
+
+```{r}
+pls_fitM <- plsr(CASE_STATUS ~ ., data = H1B_Train)
+yHat_pls <- predict(pls_fitM, newdata = H1B_Test)
+mean((yHat_pls - H1B_Test$CASE_STATUS)^2)
+```
+
+**Mean of the prediction rate is 0.1640518 with 160 PC**
+
+## PLS - Prediction with H1B testing dataset by CV
+
+```{r}
+R2_pls  <- as.numeric(R2(pls_fit, estimate="CV")$val)
+MSEP_pls <- as.numeric(MSEP(pls_fit, estimate="CV")$val)
+ 
+which_max_R2_pls <- which.max(R2_pls) -1
+which_min_RSEP_pls <- which.min(MSEP_pls) -1
+max_R2_pls <- max(R2_pls)
+min_MSEP_pls <- min(MSEP_pls)
+tibble(which_max_R2_pls, which_min_RSEP_pls,max_R2_pls,min_MSEP_pls)
+
+```
+
+
+**For PLS regression the best model has 11 PCs. The best model has the highest cross-validation R2 at 0.39 and the lowest MSEP at 0.15**
+
+```{r}
+pls_fit2 = plsr(CASE_STATUS ~ ., data = H1B_Train, ncomp= 11)
+summary(pls_fit2)
+```
+
+
+
+```{r eval=FALSE, include=FALSE}
+# Predicted.rr <- ifelse(yHat_pls >= 1.5, 2, 1)[,1]
+# table(H1B_Test$CASE_STATUS, Predicted.rr)
+```
+
+# Validation Plot PCA and PLS
+```{r eval=FALSE, include=FALSE}
+## NOT USING THIS PLOT TO KEEP IT AS IT IS
+layout(matrix(c(2,1), nrow = 1, ncol = 2, byrow = TRUE))
+validationplot(pcr_fit)
+mtext("PCR",side = 4)
+validationplot(pls_fit)
+mtext("PLS",side = 4)
+mtext("Validation", side=6, outer=TRUE, cex=2)
+```
+
+```{r echo=FALSE}
+par(mfrow=c(1,2), oma=c(0,0,2,0))
+plot(pcr_fit, "validation", val.type = "MSEP", legendpos = "right", main = "PCR")
+plot(pls_fit, "validation", val.type = "MSEP", legendpos = "right", main = "PLS")
+title("Validation Plot", line = -20, outer = TRUE)
+```
+
+
+# PCA/PLS Comparason
+
+```{r include=FALSE}
+library(cowplot)
+library(ggthemr)
+
+df = data.frame(
+p =rep(1:162, 2),
+type = c(rep("PCR", 162), rep("PLS", 162)),
+R2 = c(R2_pcr[-1], R2_pls[-1]),
+PMSE = c(MSEP_pcr[-1], MSEP_pls[-1] ))
+```
+
+
+```{r include=FALSE}
+plot1 <- ggplot2::ggplot(df, ggplot2::aes(p, R2, color = type)) +
+  ggplot2::geom_line()+
+  legend_top()+
+  labs(caption = "Adjested R Squared")+
+  theme(plot.caption = element_text(hjust=0.5, size=rel(1.2)))
+plot2 <- ggplot2::ggplot(df, ggplot2::aes(p, PMSE, color = type)) +
+  ggplot2::geom_line()+
+  legend_top()+
+  labs(caption = "Predicted MSE")+
+  theme(plot.caption = element_text(hjust=0.5, size=rel(1.2)))
+```
+
+
+```{r}
+plot_grid(plot1,plot2)
+```
+

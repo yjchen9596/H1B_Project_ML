@@ -108,17 +108,20 @@ Yhat <- knn(Xtrain, Xtest, Ytrain, k = 10, prob = T)
 Ytest <- H1B_Test$CASE_STATUS
 ```
 
+Getting our confusion matrix for the k=10 run
 ```{r}
 conf_matrix <- table(Ytest, Yhat)
 conf_matrix
 ```
 
+Classification rate for k = 10
 ```{r}
 class_rate <- (624 + 662) / (662+ 624 + 125 + 94)
 mis_class_rate <- 1-class_rate
 mis_class_rate
 ```
 
+Graphing K's from 1-100 and getting the minimum error rate k
 ```{r}
 # Initialize data
 err_class <- rep(1:100)
@@ -142,18 +145,22 @@ ggplot(tibble(err_class, k = 1:100), aes(x = k, y = err_class)) +
 which.min(err_class) # gives the k
 err_class[which.min(err_class)] # Probability of a Mis-classification 
 ```
+
+Getting our Y-hat's for the most optimal k of 7
 ```{r}
 #Running with Best K
 Yhat_7 <- knn(Xtrain, Xtest, Ytrain, k = 7, prob = T) 
 
 ```
 
+Confusion matrix for k = 7
 ```{r}
 #Confusion Matrix
 conf_matrix <- table(Ytest, Yhat_7)
 conf_matrix
 ```
 
+Classfication Rate and Missclassification Rate for our ideal k
 ```{r}
 #Calculating Missclassification Rate for our ideal K
 
@@ -163,6 +170,7 @@ class_rate = (table(Ytest, Yhat_7)[1, 1] + table(Ytest, Yhat_7)[2, 2])/(1505)
 1-class_rate
 ```
 
+Testing the model's ability to predict
 ```{r}
 #Using Yuka and Connie as tests
 

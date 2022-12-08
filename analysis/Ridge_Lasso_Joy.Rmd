@@ -46,7 +46,7 @@ y.test.dummies <- as.matrix(H1B_dummies_Test[,2])
 Ridge regression seems beneficial for this data due to the high number of predictor variables and because it is a shrinkage method that is useful in reducing multicollinearity as well as variance between estimates. 
 
 ```{r}
-train_rr_dummies <- glmnet(x.train.dummies, y.train.dummies, alpha=0)
+train_rr_dummies <- glmnet(x.train.dummies, as.factor(y.train.dummies), alpha=0, family = "binomial")
 plot(train_rr_dummies)
 ```
 
@@ -60,17 +60,17 @@ In this plot we can see that as lambda increases the parameters get closer to ze
 
 ```{r}
 set.seed(123)
-rr_cv_dummies <- cv.glmnet(x.train.dummies, y.train.dummies, alpha=0)
+rr_cv_dummies <- cv.glmnet(x.train.dummies, as.factor(y.train.dummies), alpha=0, family= "binomial")
 rr_cv_dummies
 ```
 
-Here we can see that lambda.min is 0.049 and lambda.1se is 0.162. Let's take a look at the cross-validation curve. 
+Here we can see that lambda.min is 0.017 and lambda.1se is 0.021. Let's take a look at the cross-validation curve. 
 
 ```{r}
 plot(rr_cv_dummies)
 ```
 
-In the plot we can clearly see that as lambda increases the MSE increases. Notice the most left dashed line corresponds to lambda min and the other dashe line corresponds to lambda.1se. No coefficients or variables were eliminated from this model. 
+In the plot we can clearly see that as lambda increases the Binomial Deviance increases. Notice the most left dashed line corresponds to lambda min and the other dashed line corresponds to lambda.1se. No coefficients or variables were eliminated from this model. 
 
 ### Finding Prediction MSE and Classification Rate for Ridge
 
@@ -83,19 +83,19 @@ round(colMeans((pred_test_rr_dummies - y.test.dummies)^2), digits = 2)
 Predicted.rr.dummies <- ifelse(pred_test_rr_dummies >= 0.5, 1, 0)[,1]
 table(H1B_dummies_Test$CASE_STATUS, Predicted.rr.dummies)
 
-class_rate1 = (506+650)/(506+243+106+650)
+class_rate1 = (563+645)/(563+186+111+645)
 
 1- class_rate1
 ```
 
-The RMSE for Ridge regression using our data was 0.16 and the error classification rate was 23.7%
+The RMSE for Ridge regression using our data was 0.14 and the error classification rate was 19.7%
 
 ### Running Lasso Regression
 
 Lasso regression seems like an even better variation of ridge regression to use because ridge regression does not shrink parameters to zero. Our dataset including the dummy variables seems especially suited for LASSO as it has high dimension (a lot of predictors) and a good amount of correlation. Using LAsso, we can more easily identify the variables that are most strongly associated with H1B Visa approval.  
 
 ```{r}
-train_lr_dummies <- glmnet(x.train.dummies, y.train.dummies)
+train_lr_dummies <- glmnet(x.train.dummies, as.factor(y.train.dummies), family = "binomial")
 plot(train_lr_dummies)
 ```
 
@@ -109,18 +109,18 @@ In this plot we can see that as lambda increases the number of non-zero paramete
 
 ```{r}
 set.seed(123)
-lr_cv_dummies <- cv.glmnet(x.train.dummies, y.train.dummies)
+lr_cv_dummies <- cv.glmnet(x.train.dummies, as.factor(y.train.dummies), family = "binomial")
 lr_cv_dummies
 ```
 
-Here we can see that lambda.min is 0.008 and lambda.1se is 0.013. Let's take a look at the cross-validation curve. 
+Here we can see that lambda.min is 0.005 and lambda.1se is 0.011. Let's take a look at the cross-validation curve. 
 
 ```{r}
 #Plotting
 plot(lr_cv_dummies)
 ```
 
-In the plot we can clearly see that as lambda increases the MSE first decreases a little and then increases sharply after lamba.min and lambda.1st. Also, that the number of non-zero paramaters also decreased significantly as lambda increased. Let's take a look at the coefficients of the predictive parameters and see what coefficients were eliminated from the model. 
+In the plot we can clearly see that as lambda increases the binomial deviance first decreases a little and then increases sharply after lamba.min and lambda.1st. Also, that the number of non-zero paramaters also decreased significantly as lambda increased. Let's take a look at the coefficients of the predictive parameters and see what coefficients were eliminated from the model. 
 
 ```{r}
 #Looking at Coefficients
@@ -128,12 +128,12 @@ coef(lr_cv_dummies)
 ```
 
 Here are some interesting things:
-- Required experience, profession occupation, skill level and unit of pay were all eliminated. Many countries and other categorical dummy variables were also eliminated.
+- Required experience, skill level and unit of pay were all eliminated. Many countries and other categorical dummy variables were also eliminated.
 - Alternative occupation accepted, foreign language required, years since graduation, whether your current employed, your employer completing you application, the waiting period and hour wage were all kept. 
-- Greece, Iraq, UK and the United states all had a negative impact on acceptance and India had a positive impact.
+- Greece, Iraq, Mongolia, UK and the United states all had a negative impact on acceptance and India and Japan had a positive impact.
 - The worker having education degrees including law degrees and medical degrees had a positive impact.
 - Going to school in the US also had a positive impact. 
-- Lastly already being a H1B recepient also had a positive impact on approval
+- Lastly already being a H1B recipient also had a positive impact on approval
 
 ### Getting Prediction MSE and Classification Rate for Lasso
 
@@ -146,14 +146,14 @@ round(colMeans((pred_test_lr_dummies-y.test.dummies)^2), digits = 2)
 Predicted.lr.dummies <- ifelse(pred_test_lr_dummies >= 0.5, 1, 0)[,1]
 table(H1B_dummies_Test$CASE_STATUS, Predicted.lr.dummies)
 
-class_rate2 = (501+668)/(501+248+88+668)
+class_rate2 = (621+665)/(621+128+91+665)
 
 1-class_rate2
 
 ```
 
-The RMSE for LASSO regression using our data was 0.16 and the error classification rate was 22.3%
+The RMSE for LASSO regression using our data was 0.11 and the error classification rate was 14.5%
 
 ## Conclusion
 
-Overall, even though the prediction RMSE was the same for both, I think the LASSO regression was the best out of the two because it allowed us to identify the variables that are most strongly associated with H1B Visa approval.
+Overall, the RMSE for the LASSO regression was better than the Ridge regression and I think the LASSO regression was the best out of the two because it allowed us to identify the variables that are most strongly associated with H1B Visa approval.

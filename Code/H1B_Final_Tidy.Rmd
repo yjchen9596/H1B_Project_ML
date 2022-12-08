@@ -11,20 +11,33 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse)
 library(lubridate)
 library(tidymodels)
 library(fastDummies)
 library(janitor)
+```
 
-H1B <- read_csv(file = "C:\\Users\\jermj\\OneDrive\\Desktop\\H1B_Project_ML\\Data\\H1B_Initial_Tidy.csv")
 
+### Reading in initial tidy data
+
+```{r}
+H1B <- read_csv("../Data/H1B_Initial_Tidy.csv")
+```
+
+### Creating Waiting Period Variable and deselecting variables that aren't of interest
+
+```{r}
 #adding waiting time variable and deselecting unnecessary variables
 H1B <- H1B %>% 
   mutate(WAITING_PERIOD = DECISION_DATE- RECEIVED_DATE) |> 
   dplyr::select(-c(DECISION_DATE, REFILE, FW_OWNERSHIP_INTEREST, REQUIRED_TRAINING, RECEIVED_DATE, FOREIGN_WORKER_LIVE_ON_PREM, PW_SOC_TITLE, JOB_TITLE, EMPLOYER_NAME, EMPLOYER_CITY, EMPLOYER_STATE_PROVINCE, FOREIGN_WORKER_LIVE_IN_DOM_SER, wAGE_OFFER_AVG, WORKSITE_CITY, WORKSITE_STATE, JOB_TITLE, ACCEPT_FOREIGN_EDUCATION, FOREIGN_WORKER_BIRTH_COUNTRY, FOREIGN_WORKER_EMPL_PAY_FOR_ED,  FOREIGN_WORKER_INFO_MAJOR, APP_FOR_COLLEGE_U_TEACHER, FOREIGN_WORKER_YRS_ED_COMP, FOREIGN_WORKER_ED_INST_COUNTRY, FOREIGN_WORKER_ALT_ED_EXP, FOREIGN_WORKER_ALT_OCC_EXP, OFFERED_TO_APPL_FOREIGN_WORKER))
+```
 
+### Creating Various categorical variables
+
+```{r}
 #Creating Hourly Wage Variable and solving NA issues with some other variables
 H1B <- H1B %>% 
   mutate(PW_WAGE_HOURLY = case_when(WAGE_OFFER_UNIT_OF_PAY == "Year" ~ PW_WAGE/2080,
@@ -39,7 +52,11 @@ H1B <- H1B %>%
          FOREIGN_WORKER_ED_INST_US = if_else(is.na(FOREIGN_WORKER_ED_INST_US), "UNK", FOREIGN_WORKER_ED_INST_US),
          FOREIGN_WORKER_EXP_WITH_EMPL = as.character(FOREIGN_WORKER_EXP_WITH_EMPL),
          FOREIGN_WORKER_EXP_WITH_EMPL = if_else(is.na(FOREIGN_WORKER_EXP_WITH_EMPL), "UNK", FOREIGN_WORKER_EXP_WITH_EMPL))
+```
 
+### Droping NA's and Chaning Waiting Period to a conintous variable
+
+```{r}
 #Dropping remaining NA's and converting Waiting Period to Numeric
 H1B <- H1B %>% 
   drop_na() %>% 
@@ -47,12 +64,16 @@ H1B <- H1B %>%
 
 ```
 
+### Dropping Countries that appear less than 20 times
+
 ```{r}
 H1B <- H1B %>%
   group_by(COUNTRY_OF_CITIZENSHIP) %>%
   filter(n() >= 20) %>% 
   ungroup()
 ```
+
+### Creating data that is evenly split between Approved and Denied
 
 ```{r}
 set.seed(1234)
@@ -68,16 +89,19 @@ H1B <- H1B.1 %>%
 
 ```
 
+### Creating Dummy Variables for categorical variables
 
 ```{r}
-#Creating Dummy Variables
 H1B_dummies <- dummy_cols(.data = H1B, select_columns = c("PW_SKILL_LEVEL", "WAGE_OFFER_UNIT_OF_PAY", "MINIMUM_EDUCATION", "COUNTRY_OF_CITIZENSHIP", "CLASS_OF_ADMISSION", "FOREIGN_WORKER_EDUCATION", "FOREIGN_WORKER_ED_INST_US", "FOREIGN_WORKER_REQ_EXPERIENCE", "FOREIGN_WORKER_EXP_WITH_EMPL"))
 
-#Deselecting Variables that dummies were created for
 H1B_dummies <- H1B_dummies %>%
   select(-c("PW_SKILL_LEVEL", "WAGE_OFFER_UNIT_OF_PAY", "MINIMUM_EDUCATION", "COUNTRY_OF_CITIZENSHIP", "CLASS_OF_ADMISSION", "FOREIGN_WORKER_EDUCATION", "FOREIGN_WORKER_ED_INST_US", "FOREIGN_WORKER_REQ_EXPERIENCE", "FOREIGN_WORKER_EXP_WITH_EMPL"))
 
-#Creating Factors
+```
+
+### Assigning Factors to categorical variables
+
+```{r}
 H1B <- H1B %>% 
   mutate(PW_SKILL_LEVEL = as.factor(PW_SKILL_LEVEL),
          WAGE_OFFER_UNIT_OF_PAY = as.factor(WAGE_OFFER_UNIT_OF_PAY),
@@ -88,13 +112,10 @@ H1B <- H1B %>%
          FOREIGN_WORKER_ED_INST_US = as.factor(FOREIGN_WORKER_ED_INST_US),
          FOREIGN_WORKER_REQ_EXPERIENCE = as.factor(FOREIGN_WORKER_REQ_EXPERIENCE),
          FOREIGN_WORKER_EXP_WITH_EMPL = as.factor(FOREIGN_WORKER_EXP_WITH_EMPL)) 
-
-
-#glimpse(H1B)
-
 ```
 
-### Training and Testing Data Splits
+
+### Creating Testing and Training Data for KNN
 
 ```{r}
 set.seed(1234)
@@ -108,6 +129,8 @@ write.csv(H1B_Train, file = "../Data/H1B_Train.csv")
 write.csv(H1B_Test, file = "../Data/H1B_Test.csv")
 ```
 
+### Creating Testing and Training Data for PCA, PLS, Ridge and Lasso Regression
+
 ```{r}
 set.seed(1234)
 data_split <- initial_split(H1B_dummies, prop = 0.7)
@@ -118,6 +141,8 @@ H1B_Test_dummies <- testing(data_split)
 write.csv(H1B_Train_dummies, file = "../Data/H1B_Train_Dummies.csv")
 write.csv(H1B_Test_dummies, file = "../Data/H1B_Test_Dummies.csv")
 ```
+
+### Creating Data for Logistic Regression and K=10 Cross Validation
 
 ```{r}
 H1B3 <- H1B %>% #filtering for countries that appeared less than 100 times

@@ -50,7 +50,7 @@ H1B <- H1B %>%
 ```{r}
 H1B <- H1B %>%
   group_by(COUNTRY_OF_CITIZENSHIP) %>%
-  filter(n() >= 20) %>%
+  filter(n() >= 20) %>% 
   ungroup()
 ```
 
@@ -58,7 +58,7 @@ H1B <- H1B %>%
 set.seed(1234)
 H1B.1 <- H1B %>%
   filter(CASE_STATUS == 1) %>% 
-  slice_sample(n = 2506)
+  slice_sample(n = 2506) 
 
 H1B.2 <- H1B %>% 
   filter(CASE_STATUS == 0)
@@ -117,5 +117,35 @@ H1B_Test_dummies <- testing(data_split)
 
 write.csv(H1B_Train_dummies, file = "../Data/H1B_Train_Dummies.csv")
 write.csv(H1B_Test_dummies, file = "../Data/H1B_Test_Dummies.csv")
+```
+
+```{r}
+H1B3 <- H1B %>% #filtering for countries that appeared less than 100 times
+  group_by(COUNTRY_OF_CITIZENSHIP) %>%
+  filter(n() >= 100) %>%
+  ungroup() 
+
+H1B3 <- H1B3 %>% #filtering for class of admission that appear less than 100 times
+  group_by(CLASS_OF_ADMISSION) %>%
+  filter(n() >= 100) %>%
+  ungroup()
+
+H1B3 <- H1B3 %>% #transforming Wage Offer Unit of Pay to Yearly or other
+  mutate(WAGE_OFFER_UNIT_OF_PAY = case_when(WAGE_OFFER_UNIT_OF_PAY == "Year" ~ 1,
+                                            T ~ 0))
+  
+set.seed(1234) #creating new split data set for logit ran with cv.glm(K=10)
+H1B.4 <- H1B3 %>%
+  filter(CASE_STATUS == 1) %>% 
+  slice_sample(n = 2261) #2261 is the to match the amount of declines
+
+H1B.5 <- H1B3 %>% 
+  filter(CASE_STATUS == 0)
+
+H1B.6 <- H1B.4 %>% #combining data set
+  rbind(H1B.5)
+
+#writing logit data set to local
+write.csv(H1B.6, file = "../Data/H1B_logit.csv")
 ```
 

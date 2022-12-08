@@ -1,0 +1,43 @@
+---
+title: "Untitled"
+author: "Concillia Mpofu"
+date: "2022-12-08"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+```{r}
+H1B_Test_us <- data.frame(
+    PW_SKILL_LEVEL = c(2, 2),
+    WAGE_OFFER_UNIT_OF_PAY = c("Year","Year"),
+    MINIMUM_EDUCATION = c("Master's", "Master's"),
+    REQUIRED_EXPERIENCE = c(1, 1),
+    ACCEPT_ALT_OCCUPATION = c(1,1),
+    FOREIGN_LANGUAGE_REQUIRED = c(0,0),
+    PROFESSIONAL_OCCUPATION = c(1,1),
+    COUNTRY_OF_CITIZENSHIP =c("ZIMBABWE", "TAIWAN"),
+    CLASS_OF_ADMISSION =c("F-1", "F-1"),
+    FOREIGN_WORKER_EDUCATION = c("Master's", "Master's"),
+    FOREIGN_WORKER_YRS_SINCE_ED =c("7","3"),
+    FOREIGN_WORKER_ED_INST_US =c(1, 1),
+    FOREIGN_WORKER_REQ_EXPERIENCE =c("Y","Y"),
+    FOREIGN_WORKER_EXP_WITH_EMPL =c(1,1),
+    FOREIGN_WORKER_CURR_EMPLOYED =c(1,1),
+    EMPLOYER_COMPLETED_APPLICATION =c(1,1),
+    WAITING_PERIOD =c("200","120"),
+    PW_WAGE_HOURLY =c(48.3298076923077,56.3899038461538)
+    )
+
+write.csv(H1B_Test_us, file = "../Data/H1B_Test_us.csv")
+```
+
+
+

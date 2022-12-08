@@ -113,7 +113,7 @@ lr_cv_dummies <- cv.glmnet(x.train.dummies, as.factor(y.train.dummies), family =
 lr_cv_dummies
 ```
 
-Here we can see that lambda.min is 0.005 and lambda.1se is 0.011. Let's take a look at the cross-validation curve. 
+Here we can see that lambda.min is 0.005 and lambda.1se is 0.010. Let's take a look at the cross-validation curve. 
 
 ```{r}
 #Plotting
@@ -128,12 +128,13 @@ coef(lr_cv_dummies)
 ```
 
 Here are some interesting things:
-- Required experience, skill level and unit of pay were all eliminated. Many countries and other categorical dummy variables were also eliminated.
-- Alternative occupation accepted, foreign language required, years since graduation, whether your current employed, your employer completing you application, the waiting period and hour wage were all kept. 
-- Greece, Iraq, Mongolia, UK and the United states all had a negative impact on acceptance and India and Japan had a positive impact.
-- The worker having education degrees including law degrees and medical degrees had a positive impact.
-- Going to school in the US also had a positive impact. 
-- Lastly already being a H1B recipient also had a positive impact on approval
+
+  - Required experience, going to school in the US, skill level and unit of pay were all eliminated. Many countries and other categorical dummy variables were also eliminated.
+  - Alternative occupation accepted, foreign language required, years since graduation, whether your currently employed, your employer completing you application, the waiting period and hour wage were all kept. 
+  - Chile, Greece, Iraq, Lebanon, Mongolia, UK and the United states all had a negative impact on acceptance and Belgium, India and Japan had a positive impact.
+  - The worker having education degrees including law degrees and medical degrees had a positive impact. 
+  - The minimum amount of education being required to do the job being an associate's degree or less seemed to have a negative impact on approval.
+  - Lastly already having an H1B visa also had a positive impact on approval
 
 ### Getting Prediction MSE and Classification Rate for Lasso
 

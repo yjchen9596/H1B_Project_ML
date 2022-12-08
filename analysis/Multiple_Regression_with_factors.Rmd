@@ -10,23 +10,33 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
-
+#Loading libraries
 library(ISLR2)
 library(tidyverse)
 library(boot)
 ```
 
-Unlike other models ran for this data set, in this model i used the data set without dummy variables because of the limitation of R variable selection couldn't be done efficiently. 
+Unlike other models ran this model with the full data set and used the cross validation method because we had high dimensional data in some variables such as Visa Class, Country of Citizenship. When ever we would split the data some variables will not be available in the test data set. 
+
+In running the full model using the cross validation methods we also had to re-code the data for some variables and remove entries in Country of citizenship with less than 100 appearances, in wage offer unit of pay we removed the biweekly as well as class of admission.
+
+In the CV we also had to keep the K Folds at 10 because some observations would not appears in other folds hence throwing an error. 
 
 ```{r}
 set.seed(12345)
-#Loading the data without spliting it into training and test sampla
+#Loading the data without splitting it into training and test sample, removed country with 100 observations or less, removed biweekly wages and visa classes with 100 observations or less
+
 H1B_logit <-read_csv('../Data/H1B_logit.csv')
 
-```
-```{r, include=FALSE}
-#Running the general linear model 
+glimpse(H1B_logit)
 
+#Remove ID column 
+H1B_logit = subset(H1B_logit, select = -c(1) )
+```
+
+
+```{r}
+#Running the general linear model 
 library(boot)
 glm <- glm(CASE_STATUS ~ ., family = binomial(link = "logit"), data=H1B_logit)
 ```
@@ -37,22 +47,23 @@ summary(glm)
 ```
 
 
-```{r, include=FALSE}
-#Model with the cross validation method boot strapping method. 
-
+```{r}
+#Model with the cross validation method boot strapping method. We used k=10 unfortunately we couldn't use more folds as the model would try to predict observations that would be out of that fold
 set.seed(123)
 cv_result <- cv.glm(data = H1B_logit, glmfit=glm, K=10)
 ```
 
 
 ```{r}
-#Mse = 0.03517
-set.seed(123)
+#RSME : 0.11
 cv_result$delta[1]
-
 ```
 
-Th model has a very low mean squared error. In running the model we initially did a train and test split becuase the split will contain other factor variables that will not be found in the test data especially in the Country, income and Current Visa Status variables. So we ended up excluding all the countries that appeared less than 100. Some of the data may have been outliers who may just increase the variances and decrease the predicting power of the model. 
+Conclusion
+
+The model has a low mean squared error at 0.11. In running the model we initially did a train and test split because the split will contain other factor variables that will not be found in the test data especially in the Country, income and Current Visa Status variables. So we ended up excluding all the countries that appeared less than 100. 
+
+In conclusion in as much as we were predicting a binary variable using this classification method, we cannot compare its accuracy with other models we did for this project and we had to manipulate the data to suit the model. In future i would like to explore the out of sample predictions to see if we have improve the model prediction strength using the training and test data. 
 
 
 

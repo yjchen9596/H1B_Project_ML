@@ -23,7 +23,7 @@ library(janitor)
 ### Reading in initial tidy data
 
 ```{r}
-H1B <- read_csv("../Data/H1B_Initial_Tidy.csv")
+H1B <- read_csv("../Data/H1B_Initial_Tidy2.csv")
 ```
 
 ### Creating Waiting Period Variable and deselecting variables that aren't of interest

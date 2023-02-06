@@ -1,6 +1,6 @@
 # H1B_Project_ML
 
-![H1B Lottery Algorithm Poster](https://github.com/[yjchen9596]/[H1B_Project_ML]/blob/[main]/image.jpg?raw=true)
+![H1B Lottery Algorithm Poster]([https://github.com/[yjchen9596]/[H1B_Project_ML]/blob/[main]/image.jpg?raw=true](https://github.com/yjchen9596/H1B_Project_ML/blob/main/poster/H1B_Poster.jpeg))
 
 
 • Processed 100k data by conducting data cleaning and manipulation to improve the model 80% performance on classification

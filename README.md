@@ -1,5 +1,8 @@
 # H1B_Project_ML
 
+![H1B Lottery Algorithm Poster](https://github.com/[yjchen9596]/[H1B_Project_ML]/blob/[main]/image.jpg?raw=true)
+
+
 • Processed 100k data by conducting data cleaning and manipulation to improve the model 80% performance on classification
 models in R (tidyverse, janitor, broom) to predict the likelihood an applicant to be selected by USCIS H1B lottery system.
 
